@@ -1,0 +1,100 @@
+<c8y-title>Vehicles</c8y-title>
+
+<div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; border: none;">
+  <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 8px 8px 0 0; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 class="card-title" style="margin: 0; font-size: 24px; font-weight: 600;">
+          <i class="fa fa-car"></i> Vehicle Fleet
+        </h4>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">View available vehicles from device groups</p>
+      </div>
+      <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+        <i class="fa fa-info-circle"></i> READ-ONLY
+      </span>
+    </div>
+  </div>
+
+  <div class="card-block" style="padding: 30px;">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center" style="padding: 60px 0;">
+      <div style="display: inline-block; position: relative;">
+        <i class="fa fa-spinner fa-spin" style="font-size: 48px; color: #f5576c;"></i>
+      </div>
+      <p style="margin-top: 20px; color: #666; font-size: 16px;">Loading vehicles...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && vehicles.length === 0" class="text-center" style="padding: 60px 20px;">
+      <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); width: 120px; height: 120px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <i class="fa fa-car" style="font-size: 60px; color: white;"></i>
+      </div>
+      <h3 style="color: #333; margin-bottom: 10px;">No Vehicles Available</h3>
+      <p style="color: #666; font-size: 16px; margin-bottom: 25px;">No device groups found. Create device groups in Cumulocity to see them here.</p>
+    </div>
+
+    <!-- Vehicles Grid -->
+    <div *ngIf="!loading && vehicles.length > 0">
+      <div class="row">
+        <div class="col-md-6 col-lg-4" *ngFor="let vehicle of vehicles" style="margin-bottom: 20px;">
+          <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; transition: all 0.3s ease; height: 100%;"
+               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.12)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
+            
+            <!-- Vehicle Icon & Number -->
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0;">
+                <i class="fa fa-car" style="font-size: 28px; color: white;"></i>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <h5 style="margin: 0; font-size: 18px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ vehicle.vehicleNumber }}
+                </h5>
+                <span class="label label-success" style="margin-top: 5px; display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 12px;">
+                  ● Available
+                </span>
+              </div>
+            </div>
+
+            <!-- Vehicle Details -->
+            <div style="margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <i class="fa fa-industry" style="width: 20px; color: #f5576c;"></i>
+                <span style="color: #666; font-size: 13px; margin-left: 8px;">{{ vehicle.maker }}</span>
+              </div>
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <i class="fa fa-tag" style="width: 20px; color: #f5576c;"></i>
+                <span style="color: #666; font-size: 13px; margin-left: 8px;">{{ vehicle.type }}</span>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <i class="fa fa-database" style="width: 20px; color: #f5576c;"></i>
+                <span style="color: #666; font-size: 13px; margin-left: 8px;">ID: {{ vehicle.id }}</span>
+              </div>
+            </div>
+
+            <!-- Read-Only Badge -->
+            <div style="margin-bottom: 15px;">
+              <span style="background: #fff0f6; color: #f5576c; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+                <i class="fa fa-lock"></i> From Device Groups
+              </span>
+            </div>
+
+            <!-- Info Button -->
+            <div style="padding-top: 15px; border-top: 1px solid #f0f0f0;">
+              <div style="text-align: center; color: #999; font-size: 12px;">
+                <i class="fa fa-info-circle"></i> Vehicles are synced from Cumulocity Device Groups
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Footer -->
+      <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #ffeef8 0%, #ffe0e9 100%); border-radius: 8px; text-align: center;">
+        <span style="font-size: 16px; color: #333; font-weight: 600;">
+          Total Vehicles Available: {{ vehicles.length }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

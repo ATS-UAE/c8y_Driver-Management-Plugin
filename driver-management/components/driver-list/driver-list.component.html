@@ -1,0 +1,554 @@
+<c8y-title>Drivers</c8y-title>
+
+<div class="card">
+  <div class="card-header driver-header">
+    <div class="header-content">
+      <div>
+        <h4 class="card-title header-title">
+          <i class="fa fa-users"></i> Driver Management
+        </h4>
+        <p class="header-subtitle">Manage your drivers and their shifts</p>
+      </div>
+
+      <button
+        class="btn btn-primary"
+        (click)="addDriver()"
+        style="
+          background: white;
+          color: #4facfe;
+          border: none;
+          font-weight: 600;
+          border-radius: 6px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        "
+      >
+        <i class="fa fa-plus"></i> Add Driver
+      </button>
+    </div>
+  </div>
+
+  <div class="card-block table-container">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center loading-state">
+      <div style="display: inline-block; position: relative">
+        <i class="fa fa-spinner fa-spin loading-icon"></i>
+      </div>
+      <p class="loading-text">Loading drivers...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      *ngIf="!loading && drivers.length === 0"
+      class="text-center empty-state"
+    >
+      <div class="empty-icon-wrapper">
+        <i class="fa fa-users empty-icon"></i>
+      </div>
+      <h3 class="empty-title">No Drivers Yet</h3>
+      <p class="empty-description">Get started by adding your first driver</p>
+      <button class="btn btn-primary empty-btn" (click)="addDriver()">
+        <i class="fa fa-plus"></i> Add Your First Driver
+      </button>
+    </div>
+
+    <!-- Drivers Table -->
+    <div *ngIf="!loading && drivers.length > 0" class="table-responsive">
+      <table class="drivers-table">
+        <thead>
+          <tr>
+            <th>Driver</th>
+            <th>Contact</th>
+            <th>License</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Custom Fields</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let driver of drivers" class="table-row">
+            <!-- Driver Info -->
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: #e9ecef;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <i
+                    class="fas fa-user"
+                    style="font-size: 18px; color: #6c757d"
+                  ></i>
+                </div>
+
+                <div style="font-weight: 500">
+                  {{ driver?.name || "Unnamed Driver" }}
+                </div>
+              </div>
+            </td>
+
+            <!-- Contact Info -->
+            <td>
+              <div class="contact-info">
+                <div class="contact-item">
+                  <i class="fa fa-phone contact-icon"></i>
+                  <span class="contact-text">
+                    {{ driver?.phoneNumber || "N/A" }}
+                  </span>
+                </div>
+                <div class="contact-item">
+                  <i class="fa fa-envelope contact-icon"></i>
+                  <span class="contact-text">
+                    {{ driver?.email || "N/A" }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- License -->
+            <td>
+              <div class="license-info">
+                <i class="fa fa-id-card license-icon"></i>
+                <span class="license-text">
+                  {{ driver?.licenseNumber || "N/A" }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Status -->
+            <td class="text-center">
+              <span
+                class="label status-badge"
+                [ngClass]="
+                  driver?.status === 'active'
+                    ? 'label-success'
+                    : 'label-default'
+                "
+              >
+                {{ driver?.status === "active" ? "● Active" : "○ Inactive" }}
+              </span>
+            </td>
+
+            <!-- Custom Fields -->
+            <td class="text-center">
+              <span *ngIf="hasCustomFields(driver)" class="custom-fields-badge">
+                <i class="fa fa-tags"></i>
+                {{ getCustomFieldsCount(driver) }}
+              </span>
+              <span *ngIf="!hasCustomFields(driver)" class="no-data">—</span>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <div class="action-buttons">
+                <button
+                  class="btn btn-sm action-btn shifts-btn"
+                  (click)="manageShifts(driver)"
+                  title="Manage Shifts"
+                >
+                  <i class="fa fa-clock-o">Shifts</i>
+                </button>
+
+                <button
+                  class="btn btn-sm action-btn edit-btn"
+                  (click)="editDriver(driver)"
+                  title="Edit Driver"
+                >
+                  <i class="fa fa-pencil">Edit</i>
+                </button>
+
+                <button
+                  class="btn btn-sm action-btn delete-btn"
+                  (click)="deleteDriver(driver)"
+                  title="Delete Driver"
+                >
+                  <i class="fa fa-trash">Delete</i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Stats Footer -->
+      <div class="stats-footer">
+        <div class="stats-container">
+          <div class="stat-item">
+            <div class="stat-value">{{ drivers.length }}</div>
+            <div class="stat-label">Total Drivers</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value stat-active">
+              {{ getActiveDriversCount() }}
+            </div>
+            <div class="stat-label">Active</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value stat-inactive">
+              {{ drivers.length - getActiveDriversCount() }}
+            </div>
+            <div class="stat-label">Inactive</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Card Styling */
+  .card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: none;
+  }
+
+  /* Header - Theme Adaptive */
+  .driver-header {
+    background: var(--brand-primary, #667eea);
+    color: white;
+    border-radius: 8px 8px 0 0;
+    padding: 20px;
+    border: none;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .header-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: white !important;
+  }
+
+  .header-subtitle {
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+    font-size: 14px;
+    color: white;
+  }
+
+  .header-btn {
+    background: white;
+    color: var(--brand-primary, #667eea);
+    border: none;
+    font-weight: 600;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px 20px;
+  }
+
+  .header-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  /* Table Container */
+  .table-container {
+    padding: 0;
+  }
+
+  /* Loading State */
+  .loading-state {
+    padding: 60px 0;
+  }
+
+  .loading-icon {
+    font-size: 48px;
+    color: #667eea;
+  }
+
+  .loading-text {
+    margin-top: 20px;
+    color: var(--text-muted, #666);
+    font-size: 16px;
+  }
+
+  /* Empty State */
+  .empty-state {
+    padding: 60px 20px;
+  }
+
+  .empty-icon-wrapper {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .empty-icon {
+    font-size: 60px;
+    color: white;
+  }
+
+  .empty-title {
+    color: var(--text-primary, #333);
+    margin-bottom: 10px;
+  }
+
+  .empty-description {
+    color: var(--text-muted, #666);
+    font-size: 16px;
+    margin-bottom: 25px;
+  }
+
+  .empty-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 12px 30px;
+    font-weight: 600;
+    border-radius: 6px;
+    font-size: 16px;
+    color: white;
+  }
+
+  /* Table */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .drivers-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .drivers-table thead tr {
+    background: var(--component-background, #f8f9fa);
+  }
+
+  .drivers-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary, #495057);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #667eea;
+  }
+
+  .drivers-table th.text-center {
+    text-align: center;
+  }
+
+  .drivers-table th.text-right {
+    text-align: right;
+  }
+
+  .drivers-table tbody .table-row {
+    border-bottom: 1px solid var(--border-color, #e9ecef);
+    transition: all 0.2s ease;
+  }
+
+  .drivers-table tbody .table-row:hover {
+    background: var(--row-hover-background, rgba(102, 126, 234, 0.05));
+  }
+
+  .drivers-table td {
+    padding: 20px;
+  }
+
+  .drivers-table td.text-center {
+    text-align: center;
+  }
+
+  .drivers-table td.text-right {
+    text-align: right;
+  }
+
+  /* Driver Info */
+  .driver-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+  }
+
+  .avatar i {
+    font-size: 22px;
+    color: white;
+  }
+
+  .driver-name {
+    font-weight: 600;
+    color: var(--text-primary, #333);
+    font-size: 15px;
+  }
+
+  /* Contact Info */
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .contact-icon {
+    width: 16px;
+    color: #667eea;
+    font-size: 12px;
+  }
+
+  .contact-text {
+    color: var(--text-muted, #666);
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  /* License */
+  .license-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .license-icon {
+    color: #667eea;
+    margin-right: 8px;
+    font-size: 14px;
+  }
+
+  .license-text {
+    color: var(--text-muted, #666);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* Status Badge */
+  .status-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Custom Fields Badge */
+  .custom-fields-badge {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+  }
+
+  .no-data {
+    color: var(--text-muted, #999);
+    font-size: 12px;
+  }
+
+  /* Action Buttons */
+  .action-buttons {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  .action-btn {
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .shifts-btn {
+    background: #4facfe;
+  }
+
+  .shifts-btn:hover {
+    background: #3a8cd9;
+  }
+
+  .edit-btn {
+    background: #667eea;
+  }
+
+  .edit-btn:hover {
+    background: #5568d3;
+  }
+
+  .delete-btn {
+    background: #ff6b6b;
+  }
+
+  .delete-btn:hover {
+    background: #ee5a52;
+  }
+
+  /* Stats Footer */
+  .stats-footer {
+    padding: 20px;
+    background: var(--component-background, #f5f7fa);
+    border-top: 2px solid var(--border-color, #e0e0e0);
+  }
+
+  .stats-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary, #333);
+  }
+
+  .stat-value.stat-active {
+    color: #28a745;
+  }
+
+  .stat-value.stat-inactive {
+    color: var(--text-secondary, #6c757d);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted, #666);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border-color, #dee2e6);
+  }
+</style>

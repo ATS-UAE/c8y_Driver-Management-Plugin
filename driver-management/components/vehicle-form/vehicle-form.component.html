@@ -1,0 +1,92 @@
+<c8y-title>{{ isEditMode ? 'Edit Vehicle' : 'Add Vehicle' }}</c8y-title>
+
+<div class="card">
+  <div class="card-header">
+    <h4 class="card-title">{{ isEditMode ? 'Edit Vehicle' : 'Add New Vehicle' }}</h4>
+  </div>
+  
+  <div class="card-block">
+    <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+      
+      <div class="form-group">
+        <label for="vehicleNumber">Vehicle Number <span class="text-danger">*</span></label>
+        <input 
+          type="text" 
+          class="form-control" 
+          id="vehicleNumber" 
+          formControlName="vehicleNumber"
+          placeholder="Enter vehicle number (e.g., ABC-1234)">
+        <small class="text-danger" *ngIf="vehicleForm.get('vehicleNumber')?.invalid && vehicleForm.get('vehicleNumber')?.touched">
+          Vehicle number is required
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="maker">Maker <span class="text-danger">*</span></label>
+        <input 
+          type="text" 
+          class="form-control" 
+          id="maker" 
+          formControlName="maker"
+          placeholder="Enter vehicle maker (e.g., Toyota, Ford)">
+        <small class="text-danger" *ngIf="vehicleForm.get('maker')?.invalid && vehicleForm.get('maker')?.touched">
+          Maker is required
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="type">Type <span class="text-danger">*</span></label>
+        <input 
+          type="text" 
+          class="form-control" 
+          id="type" 
+          formControlName="type"
+          placeholder="Enter vehicle type (e.g., Truck, Van, Sedan)">
+        <small class="text-danger" *ngIf="vehicleForm.get('type')?.invalid && vehicleForm.get('type')?.touched">
+          Type is required
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="driverId">Assign Driver</label>
+        <select class="form-control" id="driverId" formControlName="driverId">
+          <option value="">-- Select Driver (Optional) --</option>
+          <option *ngFor="let driver of drivers" [value]="driver.id">
+            {{ driver.name }} - {{ driver.licenseNumber }}
+          </option>
+        </select>
+        <small class="text-muted">Only active drivers are shown</small>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status <span class="text-danger">*</span></label>
+        <select class="form-control" id="status" formControlName="status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-group">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="loading">
+          <i class="fa fa-save"></i> {{ isEditMode ? 'Update' : 'Create' }} Vehicle
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-default" 
+          (click)="onCancel()"
+          style="margin-left: 10px;">
+          <i class="fa fa-times"></i> Cancel
+        </button>
+        
+        <span *ngIf="loading" style="margin-left: 10px;">
+          <i class="fa fa-spinner fa-spin"></i> Saving...
+        </span>
+      </div>
+
+    </form>
+  </div>
+</div>

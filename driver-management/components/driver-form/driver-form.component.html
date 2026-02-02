@@ -1,0 +1,645 @@
+<c8y-title>{{ isEditMode ? "Edit Driver" : "Add Driver" }}</c8y-title>
+
+<div
+  class="card"
+  style="
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: none;
+    margin: 0 auto;
+  "
+>
+  <div
+    class="card-header"
+    style="
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      padding: 25px;
+    "
+  >
+    <div style="display: flex; align-items: center">
+      <div
+        style="
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 15px;
+        "
+      >
+        <i class="fa fa-user" style="font-size: 24px"></i>
+      </div>
+      <div>
+        <h4
+          class="card-title"
+          style="margin: 0; font-size: 24px; font-weight: 600"
+        >
+          {{ isEditMode ? "Edit Driver" : "Add New Driver" }}
+        </h4>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px">
+          {{
+            isEditMode
+              ? "Update driver information"
+              : "Register a new driver in the system"
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-block" style="padding: 35px">
+    <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
+      <!-- Basic Information Section -->
+      <div
+        style="
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 20%);
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+          border-left: 4px solid #667eea;
+        "
+      >
+        <h5
+          style="margin: 0; color: #2c3e50; font-weight: 600; font-size: 15px"
+        >
+          <i
+            class="fa fa-info-circle"
+            style="color: #667eea; margin-right: 8px"
+          ></i>
+          Basic Information
+        </h5>
+      </div>
+
+      <!-- Name Field -->
+      <div class="form-group" style="margin-bottom: 25px">
+        <label
+          for="name"
+          style="
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+          "
+        >
+          <i class="fa fa-user" style="color: #667eea; margin-right: 5px"></i>
+          Name <span style="color: #ff6b6b">*</span>
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          id="name"
+          formControlName="name"
+          placeholder="Enter driver name"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+          onfocus="
+            this.style.borderColor = '#667eea';
+            this.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+          "
+          onblur="
+            this.style.borderColor = '#e0e6ed';
+            this.style.boxShadow = 'none';
+          "
+        />
+        <small
+          class="text-danger"
+          *ngIf="
+            driverForm.get('name')?.invalid && driverForm.get('name')?.touched
+          "
+          style="display: block; margin-top: 5px; font-size: 12px"
+        >
+          <i class="fa fa-exclamation-circle"></i> Name is required
+        </small>
+      </div>
+
+      <!-- License Number Field -->
+      <div class="form-group" style="margin-bottom: 25px">
+        <label
+          for="licenseNumber"
+          style="
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+          "
+        >
+          <i
+            class="fa fa-id-card"
+            style="color: #667eea; margin-right: 5px"
+          ></i>
+          License Number
+          <span style="color: #8492a6; font-weight: normal; font-size: 12px"
+            >(Optional)</span
+          >
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          id="licenseNumber"
+          formControlName="licenseNumber"
+          placeholder="e.g., L1234567"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+          onfocus="
+            this.style.borderColor = '#667eea';
+            this.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+          "
+          onblur="
+            this.style.borderColor = '#e0e6ed';
+            this.style.boxShadow = 'none';
+          "
+        />
+      </div>
+
+      <!-- Contact Information Section -->
+      <div
+        style="
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 20%);
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+          border-left: 4px solid #667eea;
+          margin-top: 35px;
+        "
+      >
+        <h5
+          style="margin: 0; color: #2c3e50; font-weight: 600; font-size: 15px"
+        >
+          <i class="fa fa-phone" style="color: #667eea; margin-right: 8px"></i>
+          Contact Information
+        </h5>
+      </div>
+
+      <!-- Two Column Layout for Phone and Email -->
+      <div class="row" style="margin-bottom: 25px">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label
+              for="phoneNumber"
+              style="
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 8px;
+                display: block;
+                font-size: 14px;
+              "
+            >
+              <i
+                class="fa fa-phone"
+                style="color: #667eea; margin-right: 5px"
+              ></i>
+              Phone Number
+              <span style="color: #8492a6; font-weight: normal; font-size: 12px"
+                >(Optional)</span
+              >
+            </label>
+            <input
+              type="tel"
+              class="form-control"
+              id="phoneNumber"
+              formControlName="phoneNumber"
+              placeholder="e.g., +94 71 234 5678"
+              style="
+                height: 44px;
+                line-height: 44px;
+                padding: 6px 12px;
+                font-size: 14px;
+                border: 2px solid #e0e6ed;
+                border-radius: 6px;
+              "
+              onfocus="
+                this.style.borderColor = '#667eea';
+                this.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+              "
+              onblur="
+                this.style.borderColor = '#e0e6ed';
+                this.style.boxShadow = 'none';
+              "
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label
+              for="email"
+              style="
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 8px;
+                display: block;
+                font-size: 14px;
+              "
+            >
+              <i
+                class="fa fa-envelope"
+                style="color: #667eea; margin-right: 5px"
+              ></i>
+              Email
+              <span style="color: #8492a6; font-weight: normal; font-size: 12px"
+                >(Optional)</span
+              >
+            </label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              formControlName="email"
+              placeholder="e.g., driver@example.com"
+              style="
+                height: 44px;
+                line-height: 44px;
+                padding: 6px 12px;
+                font-size: 14px;
+                border: 2px solid #e0e6ed;
+                border-radius: 6px;
+              "
+              onfocus="
+                this.style.borderColor = '#667eea';
+                this.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+              "
+              onblur="
+                this.style.borderColor = '#e0e6ed';
+                this.style.boxShadow = 'none';
+              "
+            />
+            <small
+              class="text-danger"
+              *ngIf="
+                driverForm.get('email')?.invalid &&
+                driverForm.get('email')?.touched
+              "
+              style="display: block; margin-top: 5px; font-size: 12px"
+            >
+              <i class="fa fa-exclamation-circle"></i>
+              <span *ngIf="driverForm.get('email')?.errors?.['email']"
+                >Invalid email format</span
+              >
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Field -->
+      <div class="form-group" style="margin-bottom: 30px">
+        <label
+          for="status"
+          style="
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+          "
+        >
+          <i
+            class="fa fa-toggle-on"
+            style="color: #667eea; margin-right: 5px"
+          ></i>
+          Status
+          <span style="color: #8492a6; font-weight: normal; font-size: 12px"
+            >(Optional)</span
+          >
+        </label>
+        <select
+          class="form-control"
+          id="status"
+          formControlName="status"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+          onfocus="
+            this.style.borderColor = '#667eea';
+            this.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+          "
+          onblur="
+            this.style.borderColor = '#e0e6ed';
+            this.style.boxShadow = 'none';
+          "
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <!-- Custom Fields Section -->
+      <div
+        style="
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 20%);
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          border-left: 4px solid #667eea;
+          margin-top: 35px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h5
+            style="margin: 0; color: #2c3e50; font-weight: 600; font-size: 15px"
+          >
+            <i class="fa fa-tags" style="color: #667eea; margin-right: 8px"></i>
+            Custom Fields
+          </h5>
+          <button
+            type="button"
+            class="btn btn-sm"
+            (click)="addCustomField()"
+            style="
+              background: white;
+              color: #667eea;
+              border: 2px solid #667eea;
+              padding: 6px 15px;
+              font-weight: 600;
+              border-radius: 6px;
+              font-size: 13px;
+              transition: all 0.3s;
+            "
+            onmouseover="
+              this.style.background = '#667eea';
+              this.style.color = 'white';
+            "
+            onmouseout="
+              this.style.background = 'white';
+              this.style.color = '#667eea';
+            "
+          >
+            <i class="fa fa-plus"></i> Add Field
+          </button>
+        </div>
+      </div>
+
+      <div formArrayName="customFields" style="margin-bottom: 30px">
+        <div
+          *ngIf="customFields.length === 0"
+          style="
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 2px dashed #e0e6ed;
+          "
+        >
+          <i
+            class="fa fa-tags"
+            style="font-size: 40px; color: #cbd5e0; margin-bottom: 10px"
+          ></i>
+          <p style="color: #8492a6; margin: 0; font-size: 14px">
+            No custom fields added yet
+          </p>
+          <p style="color: #8492a6; margin: 5px 0 0 0; font-size: 12px">
+            Click "Add Field" to create custom attributes
+          </p>
+        </div>
+
+        <div
+          *ngIf="customFields.length > 0"
+          style="
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid #e0e6ed;
+          "
+        >
+          <table class="table" style="margin: 0">
+            <thead
+              style="
+                background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+              "
+            >
+              <tr>
+                <th
+                  style="
+                    padding: 12px 15px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 13px;
+                    border-bottom: 2px solid #e0e6ed;
+                  "
+                >
+                  <i
+                    class="fa fa-tag"
+                    style="color: #667eea; margin-right: 5px"
+                  ></i>
+                  Field Name
+                </th>
+                <th
+                  style="
+                    padding: 12px 15px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 13px;
+                    border-bottom: 2px solid #e0e6ed;
+                  "
+                >
+                  <i
+                    class="fa fa-pencil"
+                    style="color: #667eea; margin-right: 5px"
+                  ></i>
+                  Value
+                </th>
+                <th
+                  style="
+                    width: 100px;
+                    text-align: center;
+                    padding: 12px 15px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 13px;
+                    border-bottom: 2px solid #e0e6ed;
+                  "
+                >
+                  <i class="fa fa-cog" style="color: #667eea"></i>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let field of customFields.controls; let i = index"
+                [formGroupName]="i"
+                style="border-bottom: 1px solid #e0e6ed"
+              >
+                <td style="padding: 10px 15px">
+                  <input
+                    type="text"
+                    class="form-control"
+                    formControlName="key"
+                    placeholder="e.g., Experience Level"
+                    style="
+                      height: 44px;
+                      line-height: 44px;
+                      padding: 6px 12px;
+                      font-size: 14px;
+                      border: 2px solid #e0e6ed;
+                      border-radius: 6px;
+                    "
+                    onfocus="
+                      this.style.borderColor = '#667eea';
+                      this.style.boxShadow = '0 0 0 2px rgba(102,126,234,0.1)';
+                    "
+                    onblur="
+                      this.style.borderColor = '#e0e6ed';
+                      this.style.boxShadow = 'none';
+                    "
+                  />
+                </td>
+                <td style="padding: 10px 15px">
+                  <input
+                    type="text"
+                    class="form-control"
+                    formControlName="value"
+                    placeholder="e.g., 5 years"
+                    style="
+                      height: 44px;
+                      line-height: 44px;
+                      padding: 6px 12px;
+                      font-size: 14px;
+                      border: 2px solid #e0e6ed;
+                      border-radius: 6px;
+                    "
+                    onfocus="
+                      this.style.borderColor = '#667eea';
+                      this.style.boxShadow = '0 0 0 2px rgba(102,126,234,0.1)';
+                    "
+                    onblur="
+                      this.style.borderColor = '#e0e6ed';
+                      this.style.boxShadow = 'none';
+                    "
+                  />
+                </td>
+                <td style="text-align: center; padding: 10px 15px">
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    (click)="removeCustomField(i)"
+                    style="
+                      background: #ff6b6b;
+                      color: white;
+                      border: none;
+                      padding: 6px 12px;
+                      border-radius: 4px;
+                      font-size: 12px;
+                      transition: all 0.3s;
+                    "
+                    onmouseover="
+                      this.style.background = '#ee5a52';
+                      this.style.transform = 'scale(1.05)';
+                    "
+                    onmouseout="
+                      this.style.background = '#ff6b6b';
+                      this.style.transform = 'scale(1)';
+                    "
+                  >
+                    <i class="fa fa-trash">Delete</i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div style="border-top: 2px solid #e0e6ed; margin: 30px 0"></div>
+
+      <!-- Form Actions -->
+      <div
+        style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
+      >
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="loading"
+          style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+          "
+          onmouseover="
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 6px 16px rgba(102,126,234,0.4)';
+          "
+          onmouseout="
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 12px rgba(102,126,234,0.3)';
+          "
+        >
+          <i class="fa fa-save"></i>
+          {{ isEditMode ? "Update Driver" : "Create Driver" }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-default"
+          (click)="onCancel()"
+          style="
+            background: white;
+            border: 2px solid #e0e6ed;
+
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #5a6c7d;
+            transition: all 0.3s;
+          "
+          onmouseover="
+            this.style.borderColor = '#cbd5e0';
+            this.style.background = '#f8f9fa';
+          "
+          onmouseout="
+            this.style.borderColor = '#e0e6ed';
+            this.style.background = 'white';
+          "
+        >
+          <i class="fa fa-times"></i> Cancel
+        </button>
+
+        <span
+          *ngIf="loading"
+          style="
+            display: flex;
+            align-items: center;
+            color: #667eea;
+            font-weight: 500;
+            font-size: 14px;
+          "
+        >
+          <i class="fa fa-spinner fa-spin" style="margin-right: 8px"></i> Saving
+          driver...
+        </span>
+      </div>
+    </form>
+  </div>
+</div>

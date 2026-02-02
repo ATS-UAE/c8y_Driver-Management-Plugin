@@ -1,0 +1,361 @@
+<c8y-title>{{ isEditMode ? "Edit Shift" : "Add Shift" }}</c8y-title>
+
+<div
+  class="card"
+  style="
+    margin: 0 auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: none;
+  "
+>
+  <!-- Header -->
+  <div
+    class="card-header"
+    style="
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 24px;
+      border-radius: 8px 8px 0 0;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 15px">
+      <div
+        style="
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <i class="fa fa-clock-o" style="font-size: 22px"></i>
+      </div>
+
+      <div>
+        <h4 style="margin: 0; font-size: 22px; font-weight: 600">
+          {{ isEditMode ? "Edit Shift" : "Add New Shift" }}
+        </h4>
+        <p style="margin: 4px 0 0; font-size: 14px; opacity: 0.9">
+          {{
+            isEditMode
+              ? "Update shift details"
+              : "Create a new shift assignment"
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="card-block" style="padding: 32px">
+    <form [formGroup]="shiftForm" (ngSubmit)="onSubmit()">
+      <!-- Info -->
+      <div
+        *ngIf="!isEditMode"
+        style="
+          background: #eaf7ff;
+          border-left: 4px solid #4facfe;
+          padding: 14px 18px;
+          border-radius: 6px;
+          margin-bottom: 24px;
+        "
+      >
+        <div style="display: flex; gap: 12px">
+          <i
+            class="fa fa-info-circle"
+            style="color: #4facfe; font-size: 18px"
+          ></i>
+          <div>
+            <div style="font-weight: 600; font-size: 14px">
+              Automatic Start Time
+            </div>
+            <div style="font-size: 13px; color: #5a6c7d">
+              Start time will be set automatically when the shift is created.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Driver -->
+      <div class="form-group" style="margin-bottom: 22px">
+        <label style="font-weight: 600; font-size: 14px">
+          <i class="fa fa-user" style="color: #4facfe"></i> Driver *
+        </label>
+        <select
+          class="form-control"
+          formControlName="driverId"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+        >
+          <option value="">-- Select Driver --</option>
+          <option *ngFor="let driver of drivers" [value]="driver.id">
+            {{ driver.name
+            }}{{ driver.licenseNumber ? " - " + driver.licenseNumber : "" }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Vehicle with Scroll Pagination -->
+      <div class="form-group" style="margin-bottom: 22px">
+        <label style="font-weight: 600; font-size: 14px">
+          <i class="fa fa-car" style="color: #4facfe"></i> Vehicle *
+        </label>
+
+        <!-- Loading initial vehicles -->
+        <div
+          *ngIf="loadingVehicles"
+          style="
+            padding: 30px;
+            background: #f9f9f9;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            text-align: center;
+          "
+        >
+          <i class="fa fa-spinner fa-spin fa-2x" style="color: #4facfe"></i>
+          <p style="margin-top: 10px; color: #666">Loading vehicles...</p>
+        </div>
+
+        <!-- Custom scrollable vehicle dropdown -->
+        <div *ngIf="!loadingVehicles" style="position: relative">
+          <!-- Selected vehicle display -->
+          <div
+            class="form-control"
+            (click)="toggleVehicleDropdown()"
+            style="
+              height: 44px;
+              line-height: 44px;
+              padding: 6px 12px;
+              font-size: 14px;
+              border: 2px solid #e0e6ed;
+              border-radius: 6px;
+              cursor: pointer;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span
+              *ngIf="!shiftForm.get('vehicleId')?.value"
+              style="color: #999"
+            >
+              -- Select Vehicle --
+            </span>
+            <span *ngIf="shiftForm.get('vehicleId')?.value">
+              {{ getSelectedVehicleName() }}
+            </span>
+            <i
+              class="fa"
+              [ngClass]="
+                showVehicleDropdown ? 'fa-chevron-up' : 'fa-chevron-down'
+              "
+              style="color: #4facfe"
+            ></i>
+          </div>
+
+          <!-- Dropdown list -->
+          <div
+            *ngIf="showVehicleDropdown"
+            style="
+              position: absolute;
+              top: 100%;
+              left: 0;
+              right: 0;
+              z-index: 1000;
+              background: white;
+              box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+              margin-top: 4px;
+              max-height: 220px; /* 5 items × 44px */
+              overflow-y: auto;
+            "
+            (scroll)="onVehicleScroll($event)"
+          >
+            <!-- Vehicle items -->
+            <div
+              *ngFor="let vehicle of vehicles"
+              (click)="selectVehicle(vehicle)"
+              style="
+                height: 44px;
+                line-height: 44px;
+                padding: 0 16px;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+                font-size: 14px;
+                font-weight: 500;
+                color: #333;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+              [style.background]="
+                shiftForm.get('vehicleId')?.value === vehicle.id
+                  ? '#e3f2fd'
+                  : 'white'
+              "
+              onmouseover="this.style.background = '#f5f9ff'"
+              onmouseout="
+                this.style.background =
+                  this.style.background === 'rgb(227, 242, 253)'
+                    ? '#e3f2fd'
+                    : 'white'
+              "
+            >
+              {{ vehicle.vehicleNumber }}
+            </div>
+
+            <!-- Loading more indicator -->
+            <div
+              *ngIf="loadingMoreVehicles"
+              style="
+                padding: 20px;
+                text-align: center;
+                background: #f9f9f9;
+                border-top: 1px solid #e0e6ed;
+              "
+            >
+              <i
+                class="fa fa-spinner fa-spin"
+                style="color: #4facfe; margin-right: 8px"
+              ></i>
+              <span style="color: #666; font-weight: 500"
+                >Loading more vehicles...</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <small
+          class="text-danger"
+          *ngIf="
+            shiftForm.get('vehicleId')?.invalid &&
+            shiftForm.get('vehicleId')?.touched
+          "
+        >
+          Vehicle is required
+        </small>
+        <!-- <small
+          class="text-muted"
+          style="display: block; margin-top: 5px; font-size: 12px"
+        >
+          <i class="fa fa-database"></i> {{ vehicles.length }} vehicles loaded
+          <span *ngIf="vehicleService.hasMore()" style="color: #4facfe">
+            • Scroll or click "Load More"</span
+          >
+        </small> -->
+      </div>
+
+      <!-- Start Time (edit only) -->
+      <div *ngIf="isEditMode && shiftStartTime" style="margin-bottom: 24px">
+        <label style="font-weight: 600; font-size: 14px">Start Time</label>
+        <div
+          style="
+            background: #f8f9fa;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            padding: 12px;
+          "
+        >
+          {{ shiftStartTime }}
+        </div>
+      </div>
+
+      <!-- Start Time (create mode) -->
+      <div *ngIf="!isEditMode" class="form-group" style="margin-bottom: 22px">
+        <label style="font-weight: 600; font-size: 14px">
+          <i class="fa fa-calendar" style="color: #4facfe"></i> Start Time *
+        </label>
+        <input
+          type="datetime-local"
+          class="form-control"
+          formControlName="startTime"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+        />
+        <small
+          class="text-danger"
+          *ngIf="
+            shiftForm.get('startTime')?.invalid &&
+            shiftForm.get('startTime')?.touched
+          "
+        >
+          Start time is required
+        </small>
+      </div>
+
+      <!-- End Time -->
+      <div class="form-group" style="margin-bottom: 28px">
+        <label style="font-weight: 600; font-size: 14px">
+          <i class="fa fa-flag-checkered" style="color: #4facfe"></i>
+          End Time (optional)
+        </label>
+        <input
+          type="datetime-local"
+          class="form-control"
+          formControlName="endTime"
+          style="
+            height: 44px;
+            line-height: 44px;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+          "
+        />
+      </div>
+
+      <hr style="margin: 28px 0" />
+
+      <!-- Actions -->
+      <div
+        style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
+      >
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="loading"
+          style="font-weight: 600"
+        >
+          <i class="fa fa-save"></i>
+          {{ isEditMode ? "Update Shift" : "Create Shift" }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-default"
+          (click)="onCancel()"
+          style="font-weight: 600"
+        >
+          Cancel
+        </button>
+
+        <span
+          *ngIf="loading"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4facfe;
+            font-weight: 500;
+          "
+        >
+          <i class="fa fa-spinner fa-spin"></i> Saving…
+        </span>
+      </div>
+    </form>
+  </div>
+</div>

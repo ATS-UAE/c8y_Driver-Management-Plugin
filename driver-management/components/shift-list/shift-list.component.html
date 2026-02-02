@@ -1,0 +1,430 @@
+<c8y-title>Shift Management</c8y-title>
+
+<div
+  class="card"
+  style="
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: none;
+  "
+>
+  <div
+    class="card-header"
+    style="
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      padding: 20px;
+    "
+  >
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      "
+    >
+      <div>
+        <h4
+          class="card-title"
+          style="margin: 0; font-size: 24px; font-weight: 600"
+        >
+          <i class="fa fa-clock-o"></i> Shift Management
+        </h4>
+
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px">
+          <span *ngIf="!selectedDriverId">
+            Track and manage all driver shifts
+          </span>
+          <span *ngIf="selectedDriverId">
+            Shifts for {{ selectedDriverName }}
+          </span>
+        </p>
+      </div>
+
+      <button
+        class="btn btn-primary"
+        (click)="addShift()"
+        style="
+          background: white;
+          color: #4facfe;
+          border: none;
+          font-weight: 600;
+          border-radius: 6px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        "
+      >
+        <i class="fa fa-plus"></i> Add Shift
+      </button>
+    </div>
+  </div>
+
+  <div class="card-block" style="padding: 30px">
+    <!-- Filter Badge -->
+    <div *ngIf="selectedDriverId" style="margin-bottom: 20px">
+      <div
+        style="
+          display: inline-flex;
+          align-items: center;
+          background: #e3f2fd;
+          padding: 10px 16px;
+          border-radius: 8px;
+          border-left: 4px solid #4facfe;
+        "
+      >
+        <i class="fa fa-filter" style="color: #4facfe; margin-right: 10px"></i>
+        <span style="color: #333; font-weight: 600; margin-right: 10px"
+          >Filtered by Driver:</span
+        >
+        <span style="color: #4facfe; font-weight: 600">{{
+          selectedDriverName
+        }}</span>
+        <button
+          (click)="clearFilter()"
+          style="
+            background: transparent;
+            border: none;
+            color: #ff6b6b;
+            margin-left: 15px;
+            cursor: pointer;
+            font-weight: 600;
+          "
+          onmouseover="this.style.color = '#ee5a52'"
+          onmouseout="this.style.color = '#ff6b6b'"
+        >
+          <i class="fa fa-times-circle"></i> Clear Filter
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center" style="padding: 60px 0">
+      <div style="display: inline-block; position: relative">
+        <i
+          class="fa fa-spinner fa-spin"
+          style="font-size: 48px; color: #4facfe"
+        ></i>
+      </div>
+      <p style="margin-top: 20px; color: #666; font-size: 16px">
+        Loading shifts...
+      </p>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      *ngIf="!loading && filteredShifts.length === 0"
+      class="text-center"
+      style="padding: 60px 20px"
+    >
+      <div
+        style="
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 20px;
+        "
+      >
+        <i class="fa fa-clock-o" style="font-size: 60px; color: white"></i>
+      </div>
+      <h3 style="color: #333; margin-bottom: 10px">
+        <span *ngIf="!selectedDriverId">No Shifts Scheduled</span>
+        <span *ngIf="selectedDriverId"
+          >No Shifts for {{ selectedDriverName }}</span
+        >
+      </h3>
+      <p style="color: #666; font-size: 16px; margin-bottom: 25px">
+        <span *ngIf="!selectedDriverId"
+          >Create your first shift assignment</span
+        >
+        <span *ngIf="selectedDriverId">This driver has no shifts yet</span>
+      </p>
+      <button
+        class="btn btn-primary"
+        (click)="addShift()"
+        style="
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+          border: none;
+          padding: 12px 30px;
+          font-weight: 600;
+          border-radius: 6px;
+          font-size: 16px;
+        "
+      >
+        <i class="fa fa-plus"></i> Schedule Shift
+      </button>
+    </div>
+
+    <!-- Shifts Table -->
+    <div *ngIf="!loading && filteredShifts.length > 0">
+      <div
+        style="
+          overflow-x: auto;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        "
+      >
+        <table class="table" style="margin-bottom: 0; background: white">
+          <thead
+            style="
+              background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+              color: white;
+            "
+          >
+            <tr>
+              <th style="padding: 16px; font-weight: 600; border: none">
+                <i class="fa fa-hashtag"></i> Status
+              </th>
+              <th style="padding: 16px; font-weight: 600; border: none">
+                <i class="fa fa-user"></i> Driver
+              </th>
+              <th style="padding: 16px; font-weight: 600; border: none">
+                <i class="fa fa-car"></i> Vehicle
+              </th>
+              <th style="padding: 16px; font-weight: 600; border: none">
+                <i class="fa fa-play-circle"></i> Start Time
+              </th>
+              <th style="padding: 16px; font-weight: 600; border: none">
+                <i class="fa fa-stop-circle"></i> End Time
+              </th>
+              <th
+                style="
+                  padding: 16px;
+                  font-weight: 600;
+                  border: none;
+                  text-align: center;
+                "
+              >
+                <i class="fa fa-cogs"></i> Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let shift of filteredShifts; let i = index"
+              style="
+                border-bottom: 1px solid #f0f0f0;
+                transition: background 0.2s;
+              "
+              onmouseover="this.style.background = '#f8f9fa'"
+              onmouseout="this.style.background = 'white'"
+            >
+              <!-- Status -->
+              <td style="padding: 16px; vertical-align: middle">
+                <span
+                  class="label"
+                  [ngClass]="
+                    shift.status === 'ongoing' ? 'label-info' : 'label-success'
+                  "
+                  style="
+                    font-size: 11px;
+                    padding: 6px 12px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                  "
+                >
+                  <i
+                    class="fa"
+                    [ngClass]="
+                      shift.status === 'ongoing'
+                        ? 'fa-circle'
+                        : 'fa-check-circle'
+                    "
+                  ></i>
+                  {{ shift.status === "ongoing" ? "ONGOING" : "COMPLETED" }}
+                </span>
+              </td>
+
+              <!-- Driver -->
+              <td style="padding: 16px; vertical-align: middle">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div
+                    style="
+                      width: 36px;
+                      height: 36px;
+                      border-radius: 50%;
+                      background: linear-gradient(
+                        135deg,
+                        #667eea 0%,
+                        #764ba2 100%
+                      );
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      flex-shrink: 0;
+                    "
+                  >
+                    <i
+                      class="fa fa-user"
+                      style="font-size: 14px; color: white"
+                    ></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: #333; font-size: 14px">
+                      {{ shift?.driverName || "N/A" }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Vehicle -->
+              <td style="padding: 16px; vertical-align: middle">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div
+                    style="
+                      width: 36px;
+                      height: 36px;
+                      border-radius: 50%;
+                      background: linear-gradient(
+                        135deg,
+                        #f093fb 0%,
+                        #f5576c 100%
+                      );
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      flex-shrink: 0;
+                    "
+                  >
+                    <i
+                      class="fa fa-car"
+                      style="font-size: 14px; color: white"
+                    ></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: #333; font-size: 14px">
+                      {{ shift?.vehicleNumber || "N/A" }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Start Time -->
+              <td style="padding: 16px; vertical-align: middle">
+                <div style="font-weight: 600; color: #333; font-size: 13px">
+                  {{ formatDateTime(shift.startTime) }}
+                </div>
+              </td>
+
+              <!-- End Time -->
+              <td style="padding: 16px; vertical-align: middle">
+                <div
+                  style="font-weight: 600; font-size: 13px"
+                  [style.color]="shift.endTime ? '#333' : '#999'"
+                >
+                  <i
+                    class="fa"
+                    [ngClass]="
+                      shift.endTime ? 'fa-flag-checkered' : 'fa-hourglass-half'
+                    "
+                    [style.color]="shift.endTime ? '#51cf66' : '#999'"
+                    style="margin-right: 5px"
+                  ></i>
+                  {{
+                    shift.endTime ? formatDateTime(shift.endTime) : "Ongoing..."
+                  }}
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td
+                style="
+                  padding: 16px;
+                  vertical-align: middle;
+                  text-align: center;
+                "
+              >
+                <div style="display: flex; gap: 8px; justify-content: center">
+                  <button
+                    class="btn btn-sm"
+                    (click)="editShift(shift)"
+                    style="
+                      background: #4facfe;
+                      color: white;
+                      border: none;
+                      padding: 6px 12px;
+                      border-radius: 6px;
+                      font-weight: 500;
+                      transition: all 0.2s;
+                    "
+                    onmouseover="
+                      this.style.background = '#3d9be8';
+                      this.style.transform = 'scale(1.05)';
+                    "
+                    onmouseout="
+                      this.style.background = '#4facfe';
+                      this.style.transform = 'scale(1)';
+                    "
+                  >
+                    <i class="fa fa-pencil">Edit</i>
+                  </button>
+                  <button
+                    class="btn btn-sm"
+                    (click)="deleteShift(shift)"
+                    style="
+                      background: #ff6b6b;
+                      color: white;
+                      border: none;
+                      padding: 6px 12px;
+                      border-radius: 6px;
+                      font-weight: 500;
+                      transition: all 0.2s;
+                    "
+                    onmouseover="
+                      this.style.background = '#ee5a52';
+                      this.style.transform = 'scale(1.05)';
+                    "
+                    onmouseout="
+                      this.style.background = '#ff6b6b';
+                      this.style.transform = 'scale(1)';
+                    "
+                  >
+                    <i class="fa fa-trash">Delete</i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Stats Footer -->
+      <div
+        style="
+          margin-top: 30px;
+          padding: 20px;
+          background: linear-gradient(135deg, #e0f7ff 0%, #d0f4ff 100%);
+          border-radius: 8px;
+          text-align: center;
+        "
+      >
+        <span style="font-size: 16px; color: #333; font-weight: 600">
+          <span *ngIf="!selectedDriverId">
+            Total Shifts: {{ filteredShifts.length }}
+          </span>
+
+          <span *ngIf="selectedDriverId">
+            {{ selectedDriverName }}'s Shifts: {{ filteredShifts.length }}
+          </span>
+
+          <span style="margin-left: 20px; color: #4facfe">
+            Ongoing:
+            {{ (filteredShifts | filter: "status" : "ongoing")?.length || 0 }}
+          </span>
+
+          <span style="margin-left: 20px; color: #51cf66">
+            Completed:
+            {{ (filteredShifts | filter: "status" : "completed")?.length || 0 }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
