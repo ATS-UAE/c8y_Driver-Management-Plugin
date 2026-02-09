@@ -328,7 +328,15 @@
           type="submit"
           class="btn btn-primary"
           [disabled]="loading"
-          style="font-weight: 600"
+          style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+          "
         >
           <i class="fa fa-save"></i>
           {{ isEditMode ? "Update Shift" : "Create Shift" }}
@@ -338,7 +346,16 @@
           type="button"
           class="btn btn-default"
           (click)="onCancel()"
-          style="font-weight: 600"
+          style="
+            background: white;
+            border: 2px solid #e0e6ed;
+
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #5a6c7d;
+            transition: all 0.3s;
+          "
         >
           Cancel
         </button>

@@ -4,8 +4,8 @@ import { Vehicle } from "../models/driver.model";
 
 @Injectable()
 export class VehicleService {
-  private readonly DEVICE_GROUP_FRAGMENT = 'c8y_IsDeviceGroup';
-  private readonly PAGE_SIZE = 20; // Load 50 vehicles per page
+  private readonly DEVICE_GROUP_FRAGMENT = 'c8y_IsDevice';
+  private readonly PAGE_SIZE = 20; 
   
   private allVehicles: Vehicle[] = [];
   private currentPage = 1;
