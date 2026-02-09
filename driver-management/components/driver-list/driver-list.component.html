@@ -134,12 +134,29 @@
               </span>
             </td>
 
-            <!-- Custom Fields -->
+            <!-- Custom Fields with Hover Tooltip -->
             <td class="text-center">
-              <span *ngIf="hasCustomFields(driver)" class="custom-fields-badge">
-                <i class="fa fa-tags"></i>
-                {{ getCustomFieldsCount(driver) }}
-              </span>
+              <div *ngIf="hasCustomFields(driver)" class="custom-fields-wrapper" style="position: relative; display: inline-block;">
+                <span class="custom-fields-badge" style="cursor: help;">
+                  <i class="fa fa-tags"></i>
+                  {{ getCustomFieldsCount(driver) }}
+                </span>
+                
+                <!-- Hover Tooltip - Appears BELOW the badge -->
+                <div class="custom-fields-tooltip-below">
+                  <div class="tooltip-header">
+                    <i class="fa fa-info-circle"></i> Custom Fields
+                  </div>
+                  <div class="tooltip-content">
+                    <div *ngFor="let field of getCustomFieldsArray(driver); let last = last" 
+                         class="tooltip-field"
+                         [class.no-border]="last">
+                      <div class="field-key">{{ field.key }}</div>
+                      <div class="field-value">{{ field.value }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <span *ngIf="!hasCustomFields(driver)" class="no-data">—</span>
             </td>
 
@@ -151,7 +168,7 @@
                   (click)="manageShifts(driver)"
                   title="Manage Shifts"
                 >
-                  <i class="fa fa-clock-o">Shifts</i>
+                  <i class="fa fa-clock-o"></i> Shifts
                 </button>
 
                 <button
@@ -159,7 +176,7 @@
                   (click)="editDriver(driver)"
                   title="Edit Driver"
                 >
-                  <i class="fa fa-pencil">Edit</i>
+                  <i class="fa fa-pencil"></i> Edit
                 </button>
 
                 <button
@@ -167,7 +184,7 @@
                   (click)="deleteDriver(driver)"
                   title="Delete Driver"
                 >
-                  <i class="fa fa-trash">Delete</i>
+                  <i class="fa fa-trash"></i> Delete
                 </button>
               </div>
             </td>
@@ -452,7 +469,12 @@
     font-weight: 500;
   }
 
-  /* Custom Fields Badge */
+  /* Custom Fields Badge with Tooltip - Appears BELOW */
+  .custom-fields-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
   .custom-fields-badge {
     background: rgba(102, 126, 234, 0.1);
     color: #667eea;
@@ -461,6 +483,75 @@
     font-size: 12px;
     font-weight: 500;
     display: inline-block;
+    cursor: help;
+  }
+
+  .custom-fields-tooltip-below {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    z-index: 1000;
+    min-width: 250px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+  }
+
+  .custom-fields-wrapper:hover .custom-fields-tooltip-below {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .tooltip-header {
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 10px 14px;
+    font-size: 13px;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .tooltip-content {
+    padding: 12px;
+  }
+
+  .tooltip-field {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+  }
+
+  .tooltip-field.no-border {
+    border-bottom: none;
+  }
+
+  .field-key {
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 3px;
+  }
+
+  .field-value {
+    color: #666;
+  }
+
+  /* Tooltip Arrow - Points UP */
+  .custom-fields-tooltip-below::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #667eea;
   }
 
   .no-data {
@@ -480,6 +571,7 @@
     padding: 8px 12px;
     border-radius: 6px;
     transition: all 0.2s;
+    font-weight: 500;
   }
 
   .shifts-btn {
@@ -488,6 +580,7 @@
 
   .shifts-btn:hover {
     background: #3a8cd9;
+    transform: translateY(-1px);
   }
 
   .edit-btn {
@@ -496,6 +589,7 @@
 
   .edit-btn:hover {
     background: #5568d3;
+    transform: translateY(-1px);
   }
 
   .delete-btn {
@@ -504,6 +598,7 @@
 
   .delete-btn:hover {
     background: #ee5a52;
+    transform: translateY(-1px);
   }
 
   /* Stats Footer */

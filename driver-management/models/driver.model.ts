@@ -9,6 +9,7 @@ export interface Driver {
   c8y_Driver: any;
   id?: string;
   name: string;
+  driverCode: string;
   licenseNumber: string;
   phoneNumber: string;
   email: string;

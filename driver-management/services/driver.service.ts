@@ -36,7 +36,8 @@ export class DriverService {
         email: driver.email,
         status: driver.status,
         customFields: driver.customFields || [],
-        createdTime: new Date().toISOString()
+        createdTime: new Date().toISOString(),
+        driverCode: driver.driverCode
       }
     };
 
@@ -55,7 +56,8 @@ export class DriverService {
         phoneNumber: driver.phoneNumber,
         email: driver.email,
         status: driver.status,
-        customFields: driver.customFields || []
+        customFields: driver.customFields || [],
+        driverCode: driver.driverCode
       }
     };
 
@@ -76,6 +78,7 @@ export class DriverService {
       email: data.c8y_Driver?.email || '',
       status: data.c8y_Driver?.status || 'active',
       customFields: data.c8y_Driver?.customFields || [],
+      driverCode: data.c8y_Driver?.driverCode || '',
       createdTime: data.c8y_Driver?.createdTime || data.creationTime,
       creationTime: data.creationTime,
       c8y_Driver: data.c8y_Driver
