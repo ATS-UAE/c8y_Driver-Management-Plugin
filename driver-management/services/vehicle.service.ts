@@ -1,53 +1,52 @@
-import { Injectable } from '@angular/core';
-import { InventoryService } from '@c8y/client';
+import { Injectable } from "@angular/core";
+import { InventoryService } from "@c8y/client";
 import { Vehicle } from "../models/driver.model";
 
 @Injectable()
 export class VehicleService {
-  private readonly DEVICE_GROUP_FRAGMENT = 'c8y_IsDevice';
-  private readonly PAGE_SIZE = 20; 
-  
+  private readonly DEVICE_GROUP_FRAGMENT = "c8y_IsDevice";
+  private readonly PAGE_SIZE = 20;
+
   private allVehicles: Vehicle[] = [];
   private currentPage = 1;
   private hasMorePages = true;
 
-  constructor(private inventory: InventoryService) {
-    console.log('✅ VehicleService initialized');
-  }
+  constructor(private inventory: InventoryService) {}
 
   async loadNextPage(): Promise<Vehicle[]> {
     if (!this.hasMorePages) {
-      console.log('📌 No more pages to load');
+      console.log("📌 No more pages to load");
       return this.allVehicles;
     }
 
     try {
-      console.log(`📡 Loading page ${this.currentPage}...`);
-      
       const filter = {
         fragmentType: this.DEVICE_GROUP_FRAGMENT,
         pageSize: this.PAGE_SIZE,
-        currentPage: this.currentPage
+        currentPage: this.currentPage,
       };
 
       const response = await this.inventory.list(filter);
-      const newVehicles = (response.data || []).map(item => this.mapToVehicle(item));
-      
+      const newVehicles = (response.data || []).map((item) =>
+        this.mapToVehicle(item),
+      );
+
       // Add to existing vehicles
       this.allVehicles = [...this.allVehicles, ...newVehicles];
-      
+
       // Check if there are more pages
       const paging = response.paging || {};
-      this.hasMorePages = newVehicles.length === this.PAGE_SIZE && 
-                          ((paging as any).totalPages ? this.currentPage < (paging as any).totalPages : true);
-      
+      this.hasMorePages =
+        newVehicles.length === this.PAGE_SIZE &&
+        ((paging as any).totalPages
+          ? this.currentPage < (paging as any).totalPages
+          : true);
+
       this.currentPage++;
-      
-      console.log(`✅ Loaded ${newVehicles.length} vehicles. Total: ${this.allVehicles.length}`);
-      
+
       return this.allVehicles;
     } catch (error) {
-      console.error('❌ Error loading vehicles:', error);
+      console.error("❌ Error loading vehicles:", error);
       throw error;
     }
   }
@@ -73,11 +72,10 @@ export class VehicleService {
 
   async getVehicle(id: string): Promise<Vehicle> {
     try {
-      console.log('📡 Fetching vehicle by ID:', id);
       const response = await this.inventory.detail(id);
       return this.mapToVehicle(response.data);
     } catch (error) {
-      console.error('❌ Error fetching vehicle:', error);
+      console.error("❌ Error fetching vehicle:", error);
       throw error;
     }
   }
@@ -86,9 +84,9 @@ export class VehicleService {
     return {
       id: data.id,
       vehicleNumber: data.name || data.id,
-      maker: data.owner || 'Unknown',
-      type: data.type || 'Device Group',
-      status: 'active'
+      maker: data.owner || "Unknown",
+      type: data.type || "Device Group",
+      status: "active",
     };
   }
 }

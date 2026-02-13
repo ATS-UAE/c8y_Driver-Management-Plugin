@@ -12,6 +12,7 @@ import { AlertService } from '@c8y/ngx-components';
   templateUrl: './shift-form.component.html'
 })
 export class ShiftFormComponent implements OnInit {
+[x: string]: any;
   shiftForm: FormGroup;
   isEditMode = false;
   shiftId: string | null = null;

@@ -7,36 +7,61 @@
         <h4 class="card-title header-title">
           <i class="fa fa-users"></i> Driver Management
         </h4>
-        <p class="header-subtitle">Manage your drivers and their shifts</p>
+        <p class="header-subtitle">Manage your drivers, shifts, and groups</p>
       </div>
+    </div>
+  </div>
 
+  <!-- Tab Navigation -->
+  <div class="tabs-container">
+    <div class="tabs-nav">
       <button
-        class="btn btn-primary"
-        (click)="addDriver()"
-        style="
-          background: white;
-          color: #4facfe;
-          border: none;
-          font-weight: 600;
-          border-radius: 6px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        "
+        class="tab-btn"
+        [class.active]="activeTab === 'drivers'"
+        (click)="activeTab = 'drivers'"
       >
-        <i class="fa fa-plus"></i> Add Driver
+        <i class="fa fa-users"></i>
+        <span>All Drivers</span>
+        <span class="tab-badge" [class.active]="activeTab === 'drivers'"
+          >{{ drivers.length }}</span
+        >
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'groups'"
+        (click)="activeTab = 'groups'"
+      >
+        <i class="fa fa-object-group"></i>
+        <span>Driver Groups</span>
+        <span class="tab-badge" [class.active]="activeTab === 'groups'"
+          >{{ groups.length }}</span
+        >
       </button>
     </div>
   </div>
 
-  <div class="card-block table-container">
-    <!-- Loading State -->
-    <div *ngIf="loading" class="text-center loading-state">
-      <div style="display: inline-block; position: relative">
-        <i class="fa fa-spinner fa-spin loading-icon"></i>
+  <!-- ======================== DRIVERS TAB ======================== -->
+  <div class="card-block table-container" *ngIf="activeTab === 'drivers'">
+    <div class="action-bar">
+      <div class="search-box">
+        <i class="fa fa-search"></i>
+        <input
+          type="text"
+          placeholder="Search drivers..."
+          [(ngModel)]="searchTerm"
+          (input)="filterDrivers()"
+        />
       </div>
+      <button class="btn btn-primary add-btn" (click)="addDriver()">
+        <i class="fa fa-plus"></i> Add Driver
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="text-center loading-state">
+      <i class="fa fa-spinner fa-spin loading-icon"></i>
       <p class="loading-text">Loading drivers...</p>
     </div>
 
-    <!-- Empty State -->
     <div
       *ngIf="!loading && drivers.length === 0"
       class="text-center empty-state"
@@ -51,7 +76,6 @@
       </button>
     </div>
 
-    <!-- Drivers Table -->
     <div *ngIf="!loading && drivers.length > 0" class="table-responsive">
       <table class="drivers-table">
         <thead>
@@ -59,98 +83,83 @@
             <th>Driver</th>
             <th>Contact</th>
             <th>License</th>
+            <th class="text-center">Group</th>
             <th class="text-center">Status</th>
             <th class="text-center">Custom Fields</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let driver of drivers" class="table-row">
-            <!-- Driver Info -->
+          <tr *ngFor="let driver of filteredDrivers" class="table-row">
             <td>
               <div style="display: flex; align-items: center; gap: 10px">
-                <div
-                  style="
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    background: #e9ecef;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  "
-                >
-                  <i
-                    class="fas fa-user"
-                    style="font-size: 18px; color: #6c757d"
-                  ></i>
-                </div>
-
+                <div class="avatar"><i class="fas fa-user"></i></div>
                 <div style="font-weight: 500">
-                  {{ driver?.name || "Unnamed Driver" }}
+                  {{ driver?.name || 'Unnamed Driver' }}
                 </div>
               </div>
             </td>
-
-            <!-- Contact Info -->
             <td>
               <div class="contact-info">
                 <div class="contact-item">
                   <i class="fa fa-phone contact-icon"></i>
-                  <span class="contact-text">
-                    {{ driver?.phoneNumber || "N/A" }}
-                  </span>
+                  <span class="contact-text"
+                    >{{ driver?.phoneNumber || 'N/A' }}</span
+                  >
                 </div>
                 <div class="contact-item">
                   <i class="fa fa-envelope contact-icon"></i>
-                  <span class="contact-text">
-                    {{ driver?.email || "N/A" }}
-                  </span>
+                  <span class="contact-text">{{ driver?.email || 'N/A' }}</span>
                 </div>
               </div>
             </td>
-
-            <!-- License -->
             <td>
               <div class="license-info">
                 <i class="fa fa-id-card license-icon"></i>
-                <span class="license-text">
-                  {{ driver?.licenseNumber || "N/A" }}
-                </span>
+                <span class="license-text"
+                  >{{ driver?.licenseNumber || 'N/A' }}</span
+                >
               </div>
             </td>
-
-            <!-- Status -->
+            <td class="text-center">
+              <span *ngIf="driver.groupId" class="group-badge">
+                <i class="fa fa-object-group"></i> {{
+                getGroupName(driver.groupId) }}
+              </span>
+              <span
+                *ngIf="!driver.groupId"
+                class="no-group"
+                (click)="assignGroup(driver)"
+              >
+                <i class="fa fa-plus-circle"></i> Assign Group
+              </span>
+            </td>
             <td class="text-center">
               <span
                 class="label status-badge"
-                [ngClass]="
-                  driver?.status === 'active'
-                    ? 'label-success'
-                    : 'label-default'
-                "
+                [ngClass]="driver?.status === 'active' ? 'label-success' : 'label-default'"
               >
-                {{ driver?.status === "active" ? "● Active" : "○ Inactive" }}
+                {{ driver?.status === 'active' ? '● Active' : '○ Inactive' }}
               </span>
             </td>
-
-            <!-- Custom Fields with Hover Tooltip -->
             <td class="text-center">
-              <div *ngIf="hasCustomFields(driver)" class="custom-fields-wrapper" style="position: relative; display: inline-block;">
-                <span class="custom-fields-badge" style="cursor: help;">
-                  <i class="fa fa-tags"></i>
-                  {{ getCustomFieldsCount(driver) }}
+              <div
+                *ngIf="hasCustomFields(driver)"
+                class="custom-fields-wrapper"
+              >
+                <span class="custom-fields-badge">
+                  <i class="fa fa-tags"></i> {{ getCustomFieldsCount(driver) }}
                 </span>
-                
-                <!-- Hover Tooltip - Appears BELOW the badge -->
                 <div class="custom-fields-tooltip-below">
                   <div class="tooltip-header">
                     <i class="fa fa-info-circle"></i> Custom Fields
                   </div>
                   <div class="tooltip-content">
-                    <div *ngFor="let field of getCustomFieldsArray(driver); let last = last" 
-                         class="tooltip-field"
-                         [class.no-border]="last">
+                    <div
+                      *ngFor="let field of getCustomFieldsArray(driver); let last = last"
+                      class="tooltip-field"
+                      [class.no-border]="last"
+                    >
                       <div class="field-key">{{ field.key }}</div>
                       <div class="field-value">{{ field.value }}</div>
                     </div>
@@ -159,8 +168,6 @@
               </div>
               <span *ngIf="!hasCustomFields(driver)" class="no-data">—</span>
             </td>
-
-            <!-- Actions -->
             <td class="text-right">
               <div class="action-buttons">
                 <button
@@ -168,23 +175,21 @@
                   (click)="manageShifts(driver)"
                   title="Manage Shifts"
                 >
-                  <i class="fa fa-clock-o"></i> Shifts
+                  <i class="fa fa-clock-o"></i>
                 </button>
-
                 <button
                   class="btn btn-sm action-btn edit-btn"
                   (click)="editDriver(driver)"
                   title="Edit Driver"
                 >
-                  <i class="fa fa-pencil"></i> Edit
+                  <i class="fa fa-pencil"></i>
                 </button>
-
                 <button
                   class="btn btn-sm action-btn delete-btn"
                   (click)="deleteDriver(driver)"
                   title="Delete Driver"
                 >
-                  <i class="fa fa-trash"></i> Delete
+                  <i class="fa fa-trash"></i>
                 </button>
               </div>
             </td>
@@ -192,7 +197,6 @@
         </tbody>
       </table>
 
-      <!-- Stats Footer -->
       <div class="stats-footer">
         <div class="stats-container">
           <div class="stat-item">
@@ -217,39 +221,412 @@
       </div>
     </div>
   </div>
+
+  <!-- ======================== GROUPS TAB ======================== -->
+  <div class="card-block table-container" *ngIf="activeTab === 'groups'">
+    <div class="action-bar">
+      <div class="search-box">
+        <i class="fa fa-search"></i>
+        <input
+          type="text"
+          placeholder="Search groups..."
+          [(ngModel)]="groupSearchTerm"
+          (input)="filterGroups()"
+        />
+      </div>
+      <button class="btn btn-primary add-btn" (click)="addGroup()">
+        <i class="fa fa-plus"></i> Create Group
+      </button>
+    </div>
+
+    <div *ngIf="loadingGroups" class="text-center loading-state">
+      <i class="fa fa-spinner fa-spin loading-icon"></i>
+      <p class="loading-text">Loading groups...</p>
+    </div>
+
+    <div
+      *ngIf="!loadingGroups && groups.length === 0"
+      class="text-center empty-state"
+    >
+      <div class="empty-icon-wrapper">
+        <i class="fa fa-object-group empty-icon"></i>
+      </div>
+      <h3 class="empty-title">No Groups Yet</h3>
+      <p class="empty-description">Create groups to organize your drivers</p>
+      <button class="btn btn-primary empty-btn" (click)="addGroup()">
+        <i class="fa fa-plus"></i> Create Your First Group
+      </button>
+    </div>
+
+    <div *ngIf="!loadingGroups && groups.length > 0" class="groups-grid">
+      <div *ngFor="let group of filteredGroups" class="group-card">
+        <div class="group-card-header">
+          <div class="group-icon"><i class="fa fa-object-group"></i></div>
+          <div class="group-info">
+            <h4 class="group-name">{{ group.name }}</h4>
+            <p class="group-description">
+              {{ group.description || 'No description' }}
+            </p>
+          </div>
+          <div class="group-actions">
+            <button
+              class="icon-btn"
+              (click)="editGroup(group)"
+              title="Edit Group"
+            >
+              <i class="fa fa-pencil"></i>
+            </button>
+            <button
+              class="icon-btn icon-btn-danger"
+              (click)="deleteGroup(group)"
+              title="Delete Group"
+            >
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="group-stats">
+          <div class="group-stat">
+            <i class="fa fa-users"></i
+            ><span>{{ getGroupDriverCount(group.id) }} Drivers</span>
+          </div>
+          <div class="group-stat">
+            <i class="fa fa-calendar"></i
+            ><span>Created {{ formatDate(group.createdAt) }}</span>
+          </div>
+        </div>
+        <div class="group-drivers">
+          <div class="group-drivers-header">
+            <span class="drivers-title"
+              ><i class="fa fa-users"></i> Assigned Drivers</span
+            >
+            <button
+              class="btn-link add-driver-link"
+              (click)="addDriverToGroup(group)"
+            >
+              <i class="fa fa-plus"></i> Add Driver
+            </button>
+          </div>
+          <div *ngIf="getGroupDrivers(group.id).length > 0" class="driver-list">
+            <div
+              *ngFor="let driver of getGroupDrivers(group.id)"
+              class="driver-item"
+            >
+              <div class="driver-item-info">
+                <div class="driver-mini-avatar"><i class="fa fa-user"></i></div>
+                <div class="driver-item-details">
+                  <div class="driver-item-name">{{ driver.name }}</div>
+                  <div class="driver-item-contact">
+                    {{ driver.phoneNumber || driver.email }}
+                  </div>
+                </div>
+              </div>
+              <button
+                class="remove-driver-btn"
+                (click)="removeDriverFromGroup(driver, group)"
+                title="Remove from group"
+              >
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div
+            *ngIf="getGroupDrivers(group.id).length === 0"
+            class="empty-drivers"
+          >
+            <i class="fa fa-users"></i>
+            <p>No drivers assigned yet</p>
+            <button class="btn-link" (click)="addDriverToGroup(group)">
+              <i class="fa fa-plus"></i> Add First Driver
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== ADD/EDIT GROUP MODAL ======================== -->
+<div class="modal" *ngIf="showGroupModal" (click)="closeGroupModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">
+          <i class="fa fa-object-group"></i>
+          {{ editingGroup ? 'Edit Group' : 'Create New Group' }}
+        </h4>
+        <button class="close-btn" (click)="closeGroupModal()">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Group Name <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="groupForm.name"
+            placeholder="e.g., Night Shift Team, Zone A Drivers"
+          />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea
+            class="form-control"
+            rows="3"
+            [(ngModel)]="groupForm.description"
+            placeholder="Brief description of this group..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeGroupModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" (click)="saveGroup()">
+          <i class="fa fa-save"></i> {{ editingGroup ? 'Update Group' : 'Create
+          Group' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== ASSIGN DRIVER MODAL ======================== -->
+<div
+  class="modal"
+  *ngIf="showAssignDriverModal"
+  (click)="closeAssignDriverModal()"
+>
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">
+          <i class="fa fa-user-plus"></i>
+          {{ selectedGroup ? 'Add Driver to ' + selectedGroup.name : 'Assign
+          Driver to Group' }}
+        </h4>
+        <button class="close-btn" (click)="closeAssignDriverModal()">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- ── Searchable GROUP selector (only when no group pre-selected) ── -->
+        <div class="form-group" *ngIf="!selectedGroup">
+          <label>Select Group <span class="required">*</span></label>
+          <div
+            class="searchable-select"
+            [class.open]="groupDropdownOpen"
+            (clickOutside)="groupDropdownOpen = false"
+          >
+            <div class="ss-trigger" (click)="toggleGroupDropdown()">
+              <span class="ss-value" [class.ss-selected]="!!assignForm.groupId">
+                <i
+                  class="fa"
+                  [class.fa-object-group]="true"
+                  [class.ss-placeholder-icon]="!assignForm.groupId"
+                ></i>
+                {{ assignForm.groupId ? getGroupName(assignForm.groupId) :
+                'Choose a group...' }}
+              </span>
+              <i
+                class="fa ss-arrow"
+                [class.fa-chevron-up]="groupDropdownOpen"
+                [class.fa-chevron-down]="!groupDropdownOpen"
+              ></i>
+            </div>
+
+            <div
+              class="ss-panel"
+              *ngIf="groupDropdownOpen"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="ss-search-wrap">
+                <i class="fa fa-search ss-search-icon"></i>
+                <input
+                  class="ss-search-input"
+                  type="text"
+                  placeholder="Search groups..."
+                  [(ngModel)]="groupSelectSearch"
+                  (ngModelChange)="filterGroupOptions()"
+                  (click)="$event.stopPropagation()"
+                  autofocus
+                />
+                <button
+                  *ngIf="groupSelectSearch"
+                  class="ss-clear-btn"
+                  (click)="groupSelectSearch = ''; filterGroupOptions()"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+              <div class="ss-options">
+                <div *ngIf="filteredGroupOptions.length === 0" class="ss-empty">
+                  <i class="fa fa-search"></i> No groups match "{{
+                  groupSelectSearch }}"
+                </div>
+                <div
+                  *ngFor="let g of filteredGroupOptions"
+                  class="ss-option"
+                  [class.ss-selected]="assignForm.groupId === g.id"
+                  (click)="selectGroup(g)"
+                >
+                  <i class="fa fa-object-group ss-opt-icon"></i>
+                  <div class="ss-opt-body">
+                    <div class="ss-opt-label">{{ g.name }}</div>
+                    <div class="ss-opt-sub" *ngIf="g.description">
+                      {{ g.description }}
+                    </div>
+                  </div>
+                  <i
+                    class="fa fa-check ss-check"
+                    *ngIf="assignForm.groupId === g.id"
+                  ></i>
+                </div>
+              </div>
+              <div class="ss-footer">
+                {{ filteredGroupOptions.length }} of {{ groups.length }} groups
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Searchable DRIVER selector ── -->
+        <div class="form-group">
+          <label>Select Driver <span class="required">*</span></label>
+          <div class="searchable-select" [class.open]="driverDropdownOpen">
+            <div class="ss-trigger" (click)="toggleDriverDropdown()">
+              <span
+                class="ss-value"
+                [class.ss-selected]="!!assignForm.driverId"
+              >
+                <i
+                  class="fa fa-user"
+                  [class.ss-placeholder-icon]="!assignForm.driverId"
+                ></i>
+                {{ assignForm.driverId ?
+                getDriverDisplayName(assignForm.driverId) : 'Choose a driver...'
+                }}
+              </span>
+              <i
+                class="fa ss-arrow"
+                [class.fa-chevron-up]="driverDropdownOpen"
+                [class.fa-chevron-down]="!driverDropdownOpen"
+              ></i>
+            </div>
+
+            <div
+              class="ss-panel"
+              *ngIf="driverDropdownOpen"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="ss-search-wrap">
+                <i class="fa fa-search ss-search-icon"></i>
+                <input
+                  class="ss-search-input"
+                  type="text"
+                  placeholder="Search by name, phone or email..."
+                  [(ngModel)]="driverSelectSearch"
+                  (ngModelChange)="filterDriverOptions()"
+                  (click)="$event.stopPropagation()"
+                  autofocus
+                />
+                <button
+                  *ngIf="driverSelectSearch"
+                  class="ss-clear-btn"
+                  (click)="driverSelectSearch = ''; filterDriverOptions()"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+              <div class="ss-options">
+                <div
+                  *ngIf="filteredDriverOptions.length === 0"
+                  class="ss-empty"
+                >
+                  <i class="fa fa-search"></i> No drivers match "{{
+                  driverSelectSearch }}"
+                </div>
+                <div
+                  *ngFor="let d of filteredDriverOptions"
+                  class="ss-option ss-driver-option"
+                  [class.ss-selected]="assignForm.driverId === d.id"
+                  (click)="selectDriver(d)"
+                >
+                  <div class="ss-driver-avatar"><i class="fa fa-user"></i></div>
+                  <div class="ss-opt-body">
+                    <div class="ss-opt-label">{{ d.name }}</div>
+                    <div class="ss-opt-meta">
+                      <span
+                        ><i class="fa fa-phone"></i> {{ d.phoneNumber || '—'
+                        }}</span
+                      >
+                      <span
+                        ><i class="fa fa-envelope"></i> {{ d.email || '—'
+                        }}</span
+                      >
+                    </div>
+                  </div>
+                  <span
+                    class="ss-status"
+                    [class.ss-active]="d.status === 'active'"
+                    [class.ss-inactive]="d.status !== 'active'"
+                  >
+                    {{ d.status === 'active' ? '● Active' : '○ Inactive' }}
+                  </span>
+                  <i
+                    class="fa fa-check ss-check"
+                    *ngIf="assignForm.driverId === d.id"
+                  ></i>
+                </div>
+              </div>
+              <div class="ss-footer">
+                {{ filteredDriverOptions.length }} of {{
+                getAvailableDriversForGroup(selectedGroup?.id).length }}
+                available
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAssignDriverModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" (click)="confirmAssignDriver()">
+          <i class="fa fa-check"></i> Assign Driver
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-  /* Card Styling */
+  /* ── Card & Header ─────────────────────────────────────────── */
   .card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     border: none;
+    overflow: hidden;
   }
-
-  /* Header - Theme Adaptive */
   .driver-header {
-    background: var(--brand-primary, #667eea);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 8px 8px 0 0;
-    padding: 20px;
+    padding: 24px;
     border: none;
   }
-
   .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
   }
-
   .header-title {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
     color: white !important;
   }
-
   .header-subtitle {
     margin: 5px 0 0 0;
     opacity: 0.9;
@@ -257,46 +634,122 @@
     color: white;
   }
 
-  .header-btn {
+  /* ── Tabs ── */
+  .tabs-container {
     background: white;
-    color: var(--brand-primary, #667eea);
+    border-bottom: 2px solid #e9ecef;
+  }
+  .tabs-nav {
+    display: flex;
+    padding: 0 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: none;
     border: none;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+  }
+  .tab-btn:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+  }
+  .tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+  }
+  .tab-btn i {
+    font-size: 18px;
+  }
+  .tab-badge {
+    background: #667eea;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tab-btn.active .tab-badge {
+    background: white;
+    color: #667eea;
+  }
+
+  /* ── Action Bar ── */
+  .action-bar {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .search-box {
+    flex: 1;
+    max-width: 400px;
+    position: relative;
+  }
+  .search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  .add-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 10px 20px;
     font-weight: 600;
     border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 10px 20px;
+    color: white;
+    cursor: pointer;
+  }
+  .add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
 
-  .header-btn:hover {
-    background: rgba(255, 255, 255, 0.9);
-  }
-
-  /* Table Container */
+  /* ── Loading / Empty ── */
   .table-container {
     padding: 0;
   }
-
-  /* Loading State */
   .loading-state {
     padding: 60px 0;
   }
-
   .loading-icon {
     font-size: 48px;
     color: #667eea;
   }
-
   .loading-text {
     margin-top: 20px;
-    color: var(--text-muted, #666);
+    color: #666;
     font-size: 16px;
   }
-
-  /* Empty State */
   .empty-state {
     padding: 60px 20px;
   }
-
   .empty-icon-wrapper {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     width: 120px;
@@ -307,23 +760,19 @@
     justify-content: center;
     margin-bottom: 20px;
   }
-
   .empty-icon {
     font-size: 60px;
     color: white;
   }
-
   .empty-title {
-    color: var(--text-primary, #333);
+    color: #333;
     margin-bottom: 10px;
   }
-
   .empty-description {
-    color: var(--text-muted, #666);
+    color: #666;
     font-size: 16px;
     margin-bottom: 25px;
   }
-
   .empty-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
@@ -332,135 +781,127 @@
     border-radius: 6px;
     font-size: 16px;
     color: white;
+    cursor: pointer;
   }
 
-  /* Table */
+  /* ── Table ── */
   .table-responsive {
     overflow-x: auto;
   }
-
   .drivers-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
   }
-
   .drivers-table thead tr {
-    background: var(--component-background, #f8f9fa);
+    background: #f8f9fa;
   }
-
   .drivers-table th {
     padding: 16px 20px;
     text-align: left;
     font-weight: 600;
-    color: var(--text-secondary, #495057);
+    color: #495057;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 2px solid #667eea;
   }
-
   .drivers-table th.text-center {
     text-align: center;
   }
-
   .drivers-table th.text-right {
     text-align: right;
   }
-
   .drivers-table tbody .table-row {
-    border-bottom: 1px solid var(--border-color, #e9ecef);
+    border-bottom: 1px solid #e9ecef;
     transition: all 0.2s ease;
   }
-
   .drivers-table tbody .table-row:hover {
-    background: var(--row-hover-background, rgba(102, 126, 234, 0.05));
+    background: rgba(102, 126, 234, 0.05);
   }
-
   .drivers-table td {
     padding: 20px;
   }
-
   .drivers-table td.text-center {
     text-align: center;
   }
-
   .drivers-table td.text-right {
     text-align: right;
   }
-
-  /* Driver Info */
-  .driver-info {
-    display: flex;
-    align-items: center;
-  }
-
   .avatar {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 15px;
-    flex-shrink: 0;
   }
-
   .avatar i {
-    font-size: 22px;
+    font-size: 18px;
     color: white;
   }
-
-  .driver-name {
-    font-weight: 600;
-    color: var(--text-primary, #333);
-    font-size: 15px;
-  }
-
-  /* Contact Info */
   .contact-info {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
-
   .contact-item {
     display: flex;
     align-items: center;
   }
-
   .contact-icon {
     width: 16px;
     color: #667eea;
     font-size: 12px;
   }
-
   .contact-text {
-    color: var(--text-muted, #666);
+    color: #666;
     font-size: 13px;
     margin-left: 8px;
   }
-
-  /* License */
   .license-info {
     display: flex;
     align-items: center;
   }
-
   .license-icon {
     color: #667eea;
     margin-right: 8px;
     font-size: 14px;
   }
-
   .license-text {
-    color: var(--text-muted, #666);
+    color: #666;
     font-size: 13px;
     font-weight: 500;
   }
-
-  /* Status Badge */
+  .group-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .no-group {
+    color: #6c757d;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: 1px dashed #dee2e6;
+    transition: all 0.2s;
+  }
+  .no-group:hover {
+    color: #667eea;
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+  }
   .status-badge {
     display: inline-block;
     font-size: 12px;
@@ -468,13 +909,10 @@
     border-radius: 20px;
     font-weight: 500;
   }
-
-  /* Custom Fields Badge with Tooltip - Appears BELOW */
   .custom-fields-wrapper {
     position: relative;
     display: inline-block;
   }
-
   .custom-fields-badge {
     background: rgba(102, 126, 234, 0.1);
     color: #667eea;
@@ -485,7 +923,6 @@
     display: inline-block;
     cursor: help;
   }
-
   .custom-fields-tooltip-below {
     position: absolute;
     top: 100%;
@@ -501,15 +938,15 @@
     min-width: 250px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
+    transition:
+      opacity 0.2s,
+      visibility 0.2s;
     pointer-events: none;
   }
-
   .custom-fields-wrapper:hover .custom-fields-tooltip-below {
     opacity: 1;
     visibility: visible;
   }
-
   .tooltip-header {
     font-weight: 600;
     color: white;
@@ -518,34 +955,27 @@
     font-size: 13px;
     border-radius: 6px 6px 0 0;
   }
-
   .tooltip-content {
     padding: 12px;
   }
-
   .tooltip-field {
     padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
     font-size: 12px;
   }
-
   .tooltip-field.no-border {
     border-bottom: none;
   }
-
   .field-key {
     font-weight: 600;
     color: #667eea;
     margin-bottom: 3px;
   }
-
   .field-value {
     color: #666;
   }
-
-  /* Tooltip Arrow - Points UP */
   .custom-fields-tooltip-below::before {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 100%;
     left: 50%;
@@ -553,18 +983,14 @@
     border: 6px solid transparent;
     border-bottom-color: #667eea;
   }
-
   .no-data {
-    color: var(--text-muted, #999);
+    color: #999;
     font-size: 12px;
   }
-
-  /* Action Buttons */
   .action-buttons {
     display: inline-flex;
     gap: 6px;
   }
-
   .action-btn {
     color: white;
     border: none;
@@ -572,78 +998,705 @@
     border-radius: 6px;
     transition: all 0.2s;
     font-weight: 500;
+    cursor: pointer;
   }
-
   .shifts-btn {
     background: #4facfe;
   }
-
   .shifts-btn:hover {
     background: #3a8cd9;
     transform: translateY(-1px);
   }
-
   .edit-btn {
     background: #667eea;
   }
-
   .edit-btn:hover {
     background: #5568d3;
     transform: translateY(-1px);
   }
-
   .delete-btn {
     background: #ff6b6b;
   }
-
   .delete-btn:hover {
     background: #ee5a52;
     transform: translateY(-1px);
   }
 
-  /* Stats Footer */
+  /* ── Stats ── */
   .stats-footer {
     padding: 20px;
-    background: var(--component-background, #f5f7fa);
-    border-top: 2px solid var(--border-color, #e0e0e0);
+    background: #f5f7fa;
+    border-top: 2px solid #e0e0e0;
   }
-
   .stats-container {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 30px;
   }
-
   .stat-item {
     text-align: center;
   }
-
   .stat-value {
     font-size: 24px;
     font-weight: 700;
-    color: var(--text-primary, #333);
+    color: #333;
   }
-
   .stat-value.stat-active {
     color: #28a745;
   }
-
   .stat-value.stat-inactive {
-    color: var(--text-secondary, #6c757d);
+    color: #6c757d;
   }
-
   .stat-label {
     font-size: 12px;
-    color: var(--text-muted, #666);
+    color: #666;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 2px;
   }
-
   .stat-divider {
     width: 1px;
     height: 40px;
-    background: var(--border-color, #dee2e6);
+    background: #dee2e6;
+  }
+
+  /* ── Groups Grid ── */
+  .groups-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+  }
+  .group-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .group-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+  }
+  .group-card-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  .group-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .group-icon i {
+    font-size: 24px;
+    color: white;
+  }
+  .group-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .group-name {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+  }
+  .group-description {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.9;
+    color: white;
+  }
+  .group-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+  .icon-btn-danger:hover {
+    background: rgba(255, 107, 107, 0.7);
+  }
+  .group-stats {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    display: flex;
+    gap: 20px;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .group-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6c757d;
+    font-size: 13px;
+  }
+  .group-stat i {
+    color: #667eea;
+  }
+  .group-drivers {
+    padding: 20px;
+  }
+  .group-drivers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .drivers-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+  }
+  .drivers-title i {
+    color: #667eea;
+    margin-right: 6px;
+  }
+  .btn-link {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .btn-link:hover {
+    background: rgba(102, 126, 234, 0.1);
+  }
+  .add-driver-link {
+    font-size: 12px;
+  }
+  .driver-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .driver-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .driver-item:hover {
+    background: #e9ecef;
+  }
+  .driver-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+  .driver-mini-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .driver-mini-avatar i {
+    font-size: 16px;
+    color: white;
+  }
+  .driver-item-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .driver-item-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  .driver-item-contact {
+    font-size: 12px;
+    color: #6c757d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .remove-driver-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    color: #dc3545;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .remove-driver-btn:hover {
+    background: #dc3545;
+    color: white;
+  }
+  .empty-drivers {
+    text-align: center;
+    padding: 30px 20px;
+    color: #6c757d;
+  }
+  .empty-drivers i {
+    font-size: 40px;
+    color: #dee2e6;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .empty-drivers p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+  }
+
+  /* ── Modal ── */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+  }
+  .modal-dialog {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.25s ease;
+  }
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .modal-content {
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+  }
+  .modal-title i {
+    color: #667eea;
+    margin-right: 8px;
+  }
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .close-btn:hover {
+    background: #e9ecef;
+    color: #333;
+  }
+  .modal-body {
+    padding: 24px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+  }
+  .required {
+    color: #dc3545;
+  }
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  textarea.form-control {
+    resize: vertical;
+    font-family: inherit;
+  }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  /* ══════════════════════════════════════════════════
+     SEARCHABLE SELECT
+  ══════════════════════════════════════════════════ */
+  .searchable-select {
+    position: relative;
+    user-select: none;
+  }
+
+  /* Trigger */
+  .ss-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+    min-height: 44px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .ss-trigger:hover {
+    border-color: #667eea;
+  }
+  .searchable-select.open .ss-trigger {
+    border-color: #667eea;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  }
+  .ss-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #aaa;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .ss-value.ss-selected {
+    color: #333;
+    font-weight: 500;
+  }
+  .ss-placeholder-icon {
+    color: #ccc;
+  }
+  .ss-arrow {
+    font-size: 11px;
+    color: #6c757d;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: transform 0.2s;
+  }
+
+  /* Panel */
+  .ss-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1.5px solid #667eea;
+    border-top: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.18);
+    z-index: 10000;
+    overflow: hidden;
+    animation: ssPanelIn 0.15s ease;
+  }
+  @keyframes ssPanelIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Search row */
+  .ss-search-wrap {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+  .ss-search-icon {
+    color: #667eea;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  .ss-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #333;
+    outline: none;
+    min-width: 0;
+  }
+  .ss-search-input::placeholder {
+    color: #bbb;
+  }
+  .ss-clear-btn {
+    background: none;
+    border: none;
+    color: #bbb;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .ss-clear-btn:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.08);
+  }
+
+  /* Options */
+  .ss-options {
+    max-height: 220px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .ss-options::-webkit-scrollbar {
+    width: 4px;
+  }
+  .ss-options::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 10px;
+  }
+
+  .ss-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .ss-option:last-child {
+    border-bottom: none;
+  }
+  .ss-option:hover {
+    background: rgba(102, 126, 234, 0.06);
+  }
+  .ss-option.ss-selected {
+    background: rgba(102, 126, 234, 0.09);
+  }
+
+  /* Group option layout */
+  .ss-opt-icon {
+    color: #667eea;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .ss-opt-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .ss-opt-label {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+  }
+  .ss-opt-sub {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Driver option layout */
+  .ss-driver-option {
+    padding: 10px 14px;
+  }
+  .ss-driver-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .ss-driver-avatar i {
+    font-size: 14px;
+    color: white;
+  }
+  .ss-opt-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: #888;
+    margin-top: 3px;
+    flex-wrap: wrap;
+  }
+  .ss-opt-meta i {
+    color: #667eea;
+    margin-right: 3px;
+  }
+
+  /* Status badge */
+  .ss-status {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .ss-active {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+  .ss-inactive {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+  }
+
+  /* Check mark */
+  .ss-check {
+    color: #667eea;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  /* No results */
+  .ss-empty {
+    padding: 18px;
+    text-align: center;
+    color: #aaa;
+    font-size: 13px;
+  }
+  .ss-empty i {
+    margin-right: 6px;
+  }
+
+  /* Counter footer */
+  .ss-footer {
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #bbb;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    text-align: right;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .groups-grid {
+      grid-template-columns: 1fr;
+    }
+    .tabs-nav {
+      padding: 0 12px;
+    }
+    .tab-btn {
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+    .action-bar {
+      flex-direction: column;
+      gap: 12px;
+    }
+    .search-box {
+      max-width: 100%;
+    }
   }
 </style>

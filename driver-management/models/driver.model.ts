@@ -13,9 +13,10 @@ export interface Driver {
   licenseNumber: string;
   phoneNumber: string;
   email: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   customFields?: CustomField[];
   createdTime?: string;
+  groupId?: string;
 }
 
 export interface Vehicle {
@@ -23,7 +24,7 @@ export interface Vehicle {
   maker: string;
   vehicleNumber: string;
   type: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   assignedDriverId?: string;
   assignedDriverName?: string;
 }
@@ -36,5 +37,5 @@ export interface Shift {
   vehicleNumber?: string;
   startTime: string;
   endTime?: string;
-  status: 'ongoing' | 'completed';
+  status: "ongoing" | "completed";
 }
