@@ -2,48 +2,20 @@
 
 <div
   class="card"
-  style="
-    margin: 0 auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    border: none;
-  "
+  style="margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; border: none;"
 >
   <!-- Header -->
-  <div
-    class="card-header"
-    style="
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: white;
-      padding: 24px;
-      border-radius: 8px 8px 0 0;
-    "
-  >
+  <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 24px; border-radius: 8px 8px 0 0;">
     <div style="display: flex; align-items: center; gap: 15px">
-      <div
-        style="
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.25);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        "
-      >
+      <div style="width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center;">
         <i class="fa fa-clock-o" style="font-size: 22px"></i>
       </div>
-
       <div>
-        <h4 style="margin: 0; font-size: 22px; font-weight: 600">
+        <h4 style="margin:0; font-size:22px; font-weight:600">
           {{ isEditMode ? "Edit Shift" : "Add New Shift" }}
         </h4>
         <p style="margin: 4px 0 0; font-size: 14px; opacity: 0.9">
-          {{
-            isEditMode
-              ? "Update shift details"
-              : "Create a new shift assignment"
-          }}
+          {{ isEditMode ? "Update shift details" : "Create a new shift assignment" }}
         </p>
       </div>
     </div>
@@ -52,327 +24,305 @@
   <!-- Body -->
   <div class="card-block" style="padding: 32px">
     <form [formGroup]="shiftForm" (ngSubmit)="onSubmit()">
-      <!-- Info -->
-      <div
-        *ngIf="!isEditMode"
-        style="
-          background: #eaf7ff;
-          border-left: 4px solid #4facfe;
-          padding: 14px 18px;
-          border-radius: 6px;
-          margin-bottom: 24px;
-        "
-      >
-        <div style="display: flex; gap: 12px">
-          <i
-            class="fa fa-info-circle"
-            style="color: #4facfe; font-size: 18px"
-          ></i>
+
+      <!-- Info banner (create mode only) -->
+      <div *ngIf="!isEditMode" style="background:#eaf7ff; border-left:4px solid #4facfe; padding:14px 18px; border-radius:6px; margin-bottom:24px;">
+        <div style="display:flex; gap:12px">
+          <i class="fa fa-info-circle" style="color:#4facfe; font-size:18px"></i>
           <div>
-            <div style="font-weight: 600; font-size: 14px">
-              Automatic Start Time
-            </div>
-            <div style="font-size: 13px; color: #5a6c7d">
-              Start time will be set automatically when the shift is created.
-            </div>
+            <div style="font-weight:600; font-size:14px">Automatic Start Time</div>
+            <div style="font-size:13px; color:#5a6c7d">Start time will be set automatically when the shift is created.</div>
           </div>
         </div>
       </div>
 
-      <!-- Driver -->
+      <!-- ══ DRIVER — paginated scroll-to-load dropdown ══════════════ -->
       <div class="form-group" style="margin-bottom: 22px">
-        <label style="font-weight: 600; font-size: 14px">
-          <i class="fa fa-user" style="color: #4facfe"></i> Driver *
-        </label>
-        <select
-          class="form-control"
-          formControlName="driverId"
-          style="
-            height: 44px;
-            line-height: 44px;
-            padding: 6px 12px;
-            font-size: 14px;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-          "
-        >
-          <option value="">-- Select Driver --</option>
-          <option *ngFor="let driver of drivers" [value]="driver.id">
-            {{ driver.name
-            }}{{ driver.licenseNumber ? " - " + driver.licenseNumber : "" }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Vehicle with Scroll Pagination -->
-      <div class="form-group" style="margin-bottom: 22px">
-        <label style="font-weight: 600; font-size: 14px">
-          <i class="fa fa-car" style="color: #4facfe"></i> Vehicle *
+        <label style="font-weight:600; font-size:14px">
+          <i class="fa fa-user" style="color:#4facfe"></i> Driver *
         </label>
 
-        <!-- Loading initial vehicles -->
-        <div
-          *ngIf="loadingVehicles"
-          style="
-            padding: 30px;
-            background: #f9f9f9;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-            text-align: center;
-          "
-        >
-          <i class="fa fa-spinner fa-spin fa-2x" style="color: #4facfe"></i>
-          <p style="margin-top: 10px; color: #666">Loading vehicles...</p>
-        </div>
+        <div class="pds-wrap" style="position: relative">
 
-        <!-- Custom scrollable vehicle dropdown -->
-        <div *ngIf="!loadingVehicles" style="position: relative">
-          <!-- Selected vehicle display -->
-          <div
-            class="form-control"
-            (click)="toggleVehicleDropdown()"
-            style="
-              height: 44px;
-              line-height: 44px;
-              padding: 6px 12px;
-              font-size: 14px;
-              border: 2px solid #e0e6ed;
-              border-radius: 6px;
-              cursor: pointer;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <span
-              *ngIf="!shiftForm.get('vehicleId')?.value"
-              style="color: #999"
-            >
-              -- Select Vehicle --
+          <!-- Closed trigger -->
+          <div class="pds-trigger" (click)="toggleDriverDropdown()">
+            <span *ngIf="!shiftForm.get('driverId')?.value" class="pds-placeholder">
+              <i class="fa fa-user"></i> -- Select Driver --
             </span>
-            <span *ngIf="shiftForm.get('vehicleId')?.value">
-              {{ getSelectedVehicleName() }}
+            <span *ngIf="shiftForm.get('driverId')?.value" class="pds-selected-label">
+              <i class="fa fa-user"></i> {{ getSelectedDriverName() }}
             </span>
-            <i
-              class="fa"
-              [ngClass]="
-                showVehicleDropdown ? 'fa-chevron-up' : 'fa-chevron-down'
-              "
-              style="color: #4facfe"
-            ></i>
+            <i class="fa pds-chevron"
+               [class.fa-chevron-up]="showDriverDropdown"
+               [class.fa-chevron-down]="!showDriverDropdown"></i>
           </div>
 
-          <!-- Dropdown list -->
-          <div
-            *ngIf="showVehicleDropdown"
-            style="
-              position: absolute;
-              top: 100%;
-              left: 0;
-              right: 0;
-              z-index: 1000;
-              background: white;
-              box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
-              margin-top: 4px;
-              max-height: 220px; /* 5 items × 44px */
-              overflow-y: auto;
-            "
-            (scroll)="onVehicleScroll($event)"
-          >
-            <!-- Vehicle items -->
-            <div
-              *ngFor="let vehicle of vehicles"
-              (click)="selectVehicle(vehicle)"
-              style="
-                height: 44px;
-                line-height: 44px;
-                padding: 0 16px;
-                cursor: pointer;
-                border-bottom: 1px solid #f0f0f0;
-                font-size: 14px;
-                font-weight: 500;
-                color: #333;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-              "
-              [style.background]="
-                shiftForm.get('vehicleId')?.value === vehicle.id
-                  ? '#e3f2fd'
-                  : 'white'
-              "
-              onmouseover="this.style.background = '#f5f9ff'"
-              onmouseout="
-                this.style.background =
-                  this.style.background === 'rgb(227, 242, 253)'
-                    ? '#e3f2fd'
-                    : 'white'
-              "
-            >
+          <!-- Open panel -->
+          <div *ngIf="showDriverDropdown"
+               class="pds-panel"
+               (click)="$event.stopPropagation()"
+               (scroll)="onDriverScroll($event)">
+
+            <!-- Sticky search row -->
+            <div class="pds-search-row">
+              <i class="fa fa-search pds-search-icon"></i>
+              <input class="pds-search-input"
+                     type="text"
+                     placeholder="Search by name, phone or license..."
+                     [(ngModel)]="driverDropdownSearch"
+                     [ngModelOptions]="{standalone: true}"
+                     (ngModelChange)="onDriverSearchChange()"
+                     (click)="$event.stopPropagation()"
+                     autofocus>
+              <button *ngIf="driverDropdownSearch" class="pds-clear-btn" type="button"
+                      (click)="driverDropdownSearch = ''; onDriverSearchChange()">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="dropdownDrivers.length === 0 && !loadingMoreDrivers" class="pds-empty">
+              <i class="fa fa-search"></i>
+              No active drivers found<ng-container *ngIf="driverDropdownSearch"> for "{{ driverDropdownSearch }}"</ng-container>
+            </div>
+
+            <!-- Driver rows — same height as vehicle rows -->
+            <div *ngFor="let driver of dropdownDrivers"
+                 class="pds-row"
+                 [class.pds-row-selected]="shiftForm.get('driverId')?.value === driver.id"
+                 (click)="selectDriver(driver)">
+              <div class="pds-avatar"><i class="fa fa-user"></i></div>
+              <div class="pds-info">
+                <div class="pds-name">{{ driver.name }}</div>
+                <div class="pds-meta">
+                  <span *ngIf="driver.licenseNumber"><i class="fa fa-id-card"></i> {{ driver.licenseNumber }}</span>
+                  <span *ngIf="driver.phoneNumber"><i class="fa fa-phone"></i> {{ driver.phoneNumber }}</span>
+                </div>
+              </div>
+              <span class="pds-status pds-active">● Active</span>
+              <i *ngIf="shiftForm.get('driverId')?.value === driver.id" class="fa fa-check pds-check"></i>
+            </div>
+
+            <!-- Loading more spinner (identical to vehicle) -->
+            <div *ngIf="loadingMoreDrivers" class="pds-loading">
+              <i class="fa fa-spinner fa-spin" style="color:#4facfe; margin-right:8px"></i>
+              <span style="color:#666; font-weight:500">Loading more drivers...</span>
+            </div>
+
+          </div>
+        </div>
+
+        <small class="text-danger"
+          *ngIf="shiftForm.get('driverId')?.invalid && shiftForm.get('driverId')?.touched">
+          Driver is required
+        </small>
+      </div>
+
+      <!-- ══ VEHICLE — existing scroll-to-load dropdown (unchanged) ══ -->
+      <div class="form-group" style="margin-bottom: 22px">
+        <label style="font-weight:600; font-size:14px">
+          <i class="fa fa-car" style="color:#4facfe"></i> Vehicle *
+        </label>
+
+        <!-- Initial loading spinner -->
+        <div *ngIf="loadingVehicles"
+             style="padding:30px; background:#f9f9f9; border:2px solid #e0e6ed; border-radius:6px; text-align:center;">
+          <i class="fa fa-spinner fa-spin fa-2x" style="color:#4facfe"></i>
+          <p style="margin-top:10px; color:#666">Loading vehicles...</p>
+        </div>
+
+        <!-- Vehicle dropdown -->
+        <div *ngIf="!loadingVehicles" class="pvs-wrap" style="position: relative">
+          <div class="form-control"
+               (click)="toggleVehicleDropdown()"
+               style="height:44px; line-height:44px; padding:6px 12px; font-size:14px; border:2px solid #e0e6ed; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+            <span *ngIf="!shiftForm.get('vehicleId')?.value" style="color:#999">-- Select Vehicle --</span>
+            <span *ngIf="shiftForm.get('vehicleId')?.value">{{ getSelectedVehicleName() }}</span>
+            <i class="fa" [ngClass]="showVehicleDropdown ? 'fa-chevron-up' : 'fa-chevron-down'" style="color:#4facfe"></i>
+          </div>
+
+          <div *ngIf="showVehicleDropdown"
+               style="position:absolute; top:100%; left:0; right:0; z-index:1000; background:white; box-shadow:0 4px 12px rgba(79,172,254,0.2); margin-top:4px; max-height:220px; overflow-y:auto;"
+               (scroll)="onVehicleScroll($event)">
+            <div *ngFor="let vehicle of vehicles"
+                 (click)="selectVehicle(vehicle)"
+                 style="height:44px; line-height:44px; padding:0 16px; cursor:pointer; border-bottom:1px solid #f0f0f0; font-size:14px; font-weight:500; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                 [style.background]="shiftForm.get('vehicleId')?.value === vehicle.id ? '#e3f2fd' : 'white'"
+                 onmouseover="this.style.background='#f5f9ff'"
+                 onmouseout="this.style.background=this.style.background==='rgb(227, 242, 253)'?'#e3f2fd':'white'">
               {{ vehicle.vehicleNumber }}
             </div>
-
-            <!-- Loading more indicator -->
-            <div
-              *ngIf="loadingMoreVehicles"
-              style="
-                padding: 20px;
-                text-align: center;
-                background: #f9f9f9;
-                border-top: 1px solid #e0e6ed;
-              "
-            >
-              <i
-                class="fa fa-spinner fa-spin"
-                style="color: #4facfe; margin-right: 8px"
-              ></i>
-              <span style="color: #666; font-weight: 500"
-                >Loading more vehicles...</span
-              >
+            <div *ngIf="loadingMoreVehicles"
+                 style="padding:20px; text-align:center; background:#f9f9f9; border-top:1px solid #e0e6ed;">
+              <i class="fa fa-spinner fa-spin" style="color:#4facfe; margin-right:8px"></i>
+              <span style="color:#666; font-weight:500">Loading more vehicles...</span>
             </div>
           </div>
         </div>
 
-        <small
-          class="text-danger"
-          *ngIf="
-            shiftForm.get('vehicleId')?.invalid &&
-            shiftForm.get('vehicleId')?.touched
-          "
-        >
+        <small class="text-danger"
+          *ngIf="shiftForm.get('vehicleId')?.invalid && shiftForm.get('vehicleId')?.touched">
           Vehicle is required
         </small>
-        <!-- <small
-          class="text-muted"
-          style="display: block; margin-top: 5px; font-size: 12px"
-        >
-          <i class="fa fa-database"></i> {{ vehicles.length }} vehicles loaded
-          <span *ngIf="vehicleService.hasMore()" style="color: #4facfe">
-            • Scroll or click "Load More"</span
-          >
-        </small> -->
       </div>
 
-      <!-- Start Time (edit only) -->
+      <!-- Start Time (edit mode — read only display) -->
       <div *ngIf="isEditMode && shiftStartTime" style="margin-bottom: 24px">
-        <label style="font-weight: 600; font-size: 14px">Start Time</label>
-        <div
-          style="
-            background: #f8f9fa;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-            padding: 12px;
-          "
-        >
+        <label style="font-weight:600; font-size:14px">Start Time</label>
+        <div style="background:#f8f9fa; border:2px solid #e0e6ed; border-radius:6px; padding:12px;">
           {{ shiftStartTime }}
         </div>
       </div>
 
       <!-- Start Time (create mode) -->
       <div *ngIf="!isEditMode" class="form-group" style="margin-bottom: 22px">
-        <label style="font-weight: 600; font-size: 14px">
-          <i class="fa fa-calendar" style="color: #4facfe"></i> Start Time *
+        <label style="font-weight:600; font-size:14px">
+          <i class="fa fa-calendar" style="color:#4facfe"></i> Start Time *
         </label>
-        <input
-          type="datetime-local"
-          class="form-control"
-          formControlName="startTime"
-          style="
-            height: 44px;
-            line-height: 44px;
-            padding: 6px 12px;
-            font-size: 14px;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-          "
-        />
-        <small
-          class="text-danger"
-          *ngIf="
-            shiftForm.get('startTime')?.invalid &&
-            shiftForm.get('startTime')?.touched
-          "
-        >
+        <input type="datetime-local" class="form-control" formControlName="startTime"
+               style="height:44px; line-height:44px; padding:6px 12px; font-size:14px; border:2px solid #e0e6ed; border-radius:6px;" />
+        <small class="text-danger"
+          *ngIf="shiftForm.get('startTime')?.invalid && shiftForm.get('startTime')?.touched">
           Start time is required
         </small>
       </div>
 
       <!-- End Time -->
       <div class="form-group" style="margin-bottom: 28px">
-        <label style="font-weight: 600; font-size: 14px">
-          <i class="fa fa-flag-checkered" style="color: #4facfe"></i>
-          End Time (optional)
+        <label style="font-weight:600; font-size:14px">
+          <i class="fa fa-flag-checkered" style="color:#4facfe"></i> End Time (optional)
         </label>
-        <input
-          type="datetime-local"
-          class="form-control"
-          formControlName="endTime"
-          style="
-            height: 44px;
-            line-height: 44px;
-            padding: 6px 12px;
-            font-size: 14px;
-            border: 2px solid #e0e6ed;
-            border-radius: 6px;
-          "
-        />
+        <input type="datetime-local" class="form-control" formControlName="endTime"
+               style="height:44px; line-height:44px; padding:6px 12px; font-size:14px; border:2px solid #e0e6ed; border-radius:6px;" />
       </div>
 
       <hr style="margin: 28px 0" />
 
       <!-- Actions -->
-      <div
-        style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
-      >
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="loading"
-          style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            font-weight: 600;
-            border-radius: 6px;
-            font-size: 15px;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s;
-          "
-        >
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary" [disabled]="loading"
+                style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border:none; font-weight:600; border-radius:6px; font-size:15px; box-shadow:0 4px 12px rgba(102,126,234,0.3); transition:all 0.3s;">
           <i class="fa fa-save"></i>
           {{ isEditMode ? "Update Shift" : "Create Shift" }}
         </button>
-
-        <button
-          type="button"
-          class="btn btn-default"
-          (click)="onCancel()"
-          style="
-            background: white;
-            border: 2px solid #e0e6ed;
-
-            font-weight: 600;
-            border-radius: 6px;
-            font-size: 15px;
-            color: #5a6c7d;
-            transition: all 0.3s;
-          "
-        >
+        <button type="button" class="btn btn-default" (click)="onCancel()"
+                style="background:white; border:2px solid #e0e6ed; font-weight:600; border-radius:6px; font-size:15px; color:#5a6c7d; transition:all 0.3s;">
           Cancel
         </button>
-
-        <span
-          *ngIf="loading"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #4facfe;
-            font-weight: 500;
-          "
-        >
+        <span *ngIf="loading" style="display:flex; align-items:center; gap:8px; color:#4facfe; font-weight:500;">
           <i class="fa fa-spinner fa-spin"></i> Saving…
         </span>
       </div>
+
     </form>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGINATED DRIVER DROPDOWN STYLES  (pds-*)
+     Matches the vehicle dropdown pattern exactly
+══════════════════════════════════════════════════════ -->
+<style>
+  .pds-trigger {
+    height: 44px;
+    line-height: 44px;
+    padding: 6px 12px;
+    font-size: 14px;
+    border: 2px solid #e0e6ed;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    transition: border-color 0.2s;
+  }
+  .pds-trigger:hover { border-color: #4facfe; }
+  .pds-wrap:has(.pds-panel) .pds-trigger {
+    border-color: #4facfe;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .pds-placeholder    { color: #999; display: flex; align-items: center; gap: 8px; font-size: 14px; flex: 1; }
+  .pds-selected-label { color: #333; font-weight: 500; display: flex; align-items: center; gap: 8px; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pds-placeholder i, .pds-selected-label i { color: #4facfe; }
+  .pds-chevron { font-size: 11px; color: #4facfe; flex-shrink: 0; }
+
+  .pds-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 4px 12px rgba(79,172,254,0.2);
+    border: 2px solid #4facfe;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    max-height: 264px;   /* 6 rows × 44px */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .pds-panel::-webkit-scrollbar { width: 4px; }
+  .pds-panel::-webkit-scrollbar-thumb { background: #b3d9ff; border-radius: 10px; }
+
+  .pds-search-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e6ed;
+    background: #f5f9ff;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .pds-search-icon  { color: #4facfe; font-size: 13px; flex-shrink: 0; margin-right: 8px; }
+  .pds-search-input { flex: 1; border: none; background: transparent; font-size: 13px; color: #333; outline: none; }
+  .pds-search-input::placeholder { color: #bbb; }
+  .pds-clear-btn    { background: none; border: none; color: #bbb; cursor: pointer; padding: 2px 5px; border-radius: 4px; font-size: 11px; flex-shrink: 0; }
+  .pds-clear-btn:hover { color: #dc3545; }
+
+  .pds-row {
+    height: 56px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.12s;
+  }
+  .pds-row:last-of-type     { border-bottom: none; }
+  .pds-row:hover            { background: #f5f9ff; }
+  .pds-row.pds-row-selected { background: #e3f2fd; }
+
+  .pds-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #4facfe 0%, #667eea 100%);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pds-avatar i { font-size: 14px; color: white; }
+
+  .pds-info   { flex: 1; min-width: 0; }
+  .pds-name   { font-size: 14px; font-weight: 500; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pds-meta   { display: flex; gap: 10px; font-size: 11px; color: #888; margin-top: 2px; flex-wrap: wrap; }
+  .pds-meta i { color: #4facfe; margin-right: 3px; }
+
+  .pds-status   { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 12px; flex-shrink: 0; }
+  .pds-active   { background: rgba(40,167,69,0.1); color: #28a745; }
+  .pds-inactive { background: rgba(108,117,125,0.1); color: #6c757d; }
+
+  .pds-check  { color: #4facfe; font-size: 12px; flex-shrink: 0; }
+
+  .pds-empty  { padding: 20px; text-align: center; color: #aaa; font-size: 13px; }
+  .pds-empty i { margin-right: 6px; }
+
+  .pds-loading {
+    padding: 14px;
+    text-align: center;
+    background: #f9f9f9;
+    border-top: 1px solid #e0e6ed;
+  }
+</style>
