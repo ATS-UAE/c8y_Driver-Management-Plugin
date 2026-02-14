@@ -18,17 +18,13 @@ export class DriverService {
 
   // ── Full load (driver list table) ─────────────────────────────
   async getDrivers(): Promise<Driver[]> {
-    const filter = {
-      type: this.DRIVER_TYPE,
-      pageSize: 100
-    };
+    const filter = { type: this.DRIVER_TYPE, pageSize: 100 };
     const { data } = await this.inventory.list(filter);
-    console.log('Retrieved drivers:', data);
     return data.map(item => this.mapToDriver(item));
   }
 
   /**
-   * Paginated fetch — used by the scroll-to-load driver dropdown.
+   * Paginated fetch — used by scroll-to-load driver dropdowns.
    * @param page    1-based page number
    * @param search  local filter applied to the fetched page
    */
@@ -39,11 +35,8 @@ export class DriverService {
       currentPage: page,
       withTotalPages: true
     };
-
     const response = await this.inventory.list(filter);
     const drivers = (response.data as any[]).map(item => this.mapToDriver(item));
-
-    // Client-side search per page (Cumulocity MO text search is limited)
     const filtered = search.trim()
       ? drivers.filter(d => {
           const t = search.toLowerCase();
@@ -56,15 +49,8 @@ export class DriverService {
           );
         })
       : drivers;
-
-    const paging = (response as any).paging;
-    const totalPages: number = paging?.totalPages ?? 1;
-
-    return {
-      drivers: filtered,
-      hasMore: page < totalPages,
-      currentPage: page
-    };
+    const totalPages: number = (response as any).paging?.totalPages ?? 1;
+    return { drivers: filtered, hasMore: page < totalPages, currentPage: page };
   }
 
   // ── Single driver ──────────────────────────────────────────────
@@ -87,7 +73,7 @@ export class DriverService {
         customFields: driver.customFields || [],
         createdTime: new Date().toISOString(),
         driverCode: driver.driverCode,
-        groupId: driver.groupId || null
+        groupIds: driver.groupIds || []   // ← array, not single string
       }
     };
     const { data } = await this.inventory.create(managedObject);
@@ -103,7 +89,7 @@ export class DriverService {
       type: this.DRIVER_TYPE,
       name: driver.name,
       c8y_Driver: {
-        ...existingC8yDriver,
+        ...existingC8yDriver,        // preserves groupIds (and any other fields)
         name: driver.name,
         licenseNumber: driver.licenseNumber,
         phoneNumber: driver.phoneNumber,
@@ -111,33 +97,55 @@ export class DriverService {
         status: driver.status,
         customFields: driver.customFields || [],
         driverCode: driver.driverCode
+        // groupIds preserved via spread above
       }
     };
     const { data } = await this.inventory.update(managedObject);
     return this.mapToDriver(data);
   }
 
-  // ── Group assignment (minimal patch) ──────────────────────────
-  async assignDriverToGroup(driverId: string, groupId: string): Promise<Driver> {
+  // ── Multi-group assignment ─────────────────────────────────────
+
+  /**
+   * Add a driver to one group (non-destructive — existing groups kept).
+   */
+  async addDriverToGroup(driverId: string, groupId: string): Promise<Driver> {
     const { data: current } = await this.inventory.detail(driverId);
-    const managedObject = {
+    const existing: string[] = current.c8y_Driver?.groupIds || [];
+    const groupIds = existing.includes(groupId) ? existing : [...existing, groupId];
+    const { data } = await this.inventory.update({
       id: driverId,
-      c8y_Driver: { ...current.c8y_Driver, groupId }
-    };
-    const { data } = await this.inventory.update(managedObject);
-    console.log('✅ Driver assigned to group:', driverId, '->', groupId);
+      c8y_Driver: { ...current.c8y_Driver, groupIds }
+    });
+    console.log('✅ Driver added to group:', driverId, '->', groupId, '| all groups:', groupIds);
     return this.mapToDriver(data);
   }
 
-  async removeDriverFromGroup(driverId: string): Promise<Driver> {
+  /**
+   * Remove a driver from one group (other groups untouched).
+   */
+  async removeDriverFromGroup(driverId: string, groupId: string): Promise<Driver> {
     const { data: current } = await this.inventory.detail(driverId);
-    const managedObject = {
+    const existing: string[] = current.c8y_Driver?.groupIds || [];
+    const groupIds = existing.filter(id => id !== groupId);
+    const { data } = await this.inventory.update({
       id: driverId,
-      c8y_Driver: { ...current.c8y_Driver, groupId: null }
-    };
-    const { data } = await this.inventory.update(managedObject);
-    console.log('✅ Driver removed from group:', driverId);
+      c8y_Driver: { ...current.c8y_Driver, groupIds }
+    });
+    console.log('✅ Driver removed from group:', driverId, 'x', groupId, '| remaining:', groupIds);
     return this.mapToDriver(data);
+  }
+
+  /**
+   * Add multiple drivers to one group in parallel.
+   * Returns all updated Driver objects.
+   */
+  async addMultipleDriversToGroup(driverIds: string[], groupId: string): Promise<Driver[]> {
+    const results = await Promise.all(
+      driverIds.map(id => this.addDriverToGroup(id, groupId))
+    );
+    console.log('✅ Bulk assignment done — group:', groupId, '| drivers:', driverIds);
+    return results;
   }
 
   // ── Delete ─────────────────────────────────────────────────────
@@ -147,19 +155,26 @@ export class DriverService {
 
   // ── Mapper ─────────────────────────────────────────────────────
   private mapToDriver(data: any): Driver {
+    // Support legacy single groupId stored by v1
+    const raw = data.c8y_Driver;
+    let groupIds: string[] = raw?.groupIds || [];
+    if (!groupIds.length && raw?.groupId) {
+      // Migrate legacy single groupId to array on read
+      groupIds = [raw.groupId];
+    }
     return {
       id: data.id,
-      name: data.c8y_Driver?.name || data.name,
-      licenseNumber: data.c8y_Driver?.licenseNumber || '',
-      phoneNumber: data.c8y_Driver?.phoneNumber || '',
-      email: data.c8y_Driver?.email || '',
-      status: data.c8y_Driver?.status || 'active',
-      customFields: data.c8y_Driver?.customFields || [],
-      driverCode: data.c8y_Driver?.driverCode || '',
-      createdTime: data.c8y_Driver?.createdTime || data.creationTime,
+      name: raw?.name || data.name,
+      licenseNumber: raw?.licenseNumber || '',
+      phoneNumber: raw?.phoneNumber || '',
+      email: raw?.email || '',
+      status: raw?.status || 'active',
+      customFields: raw?.customFields || [],
+      driverCode: raw?.driverCode || '',
+      createdTime: raw?.createdTime || data.creationTime,
       creationTime: data.creationTime,
-      groupId: data.c8y_Driver?.groupId || undefined,
-      c8y_Driver: data.c8y_Driver
+      groupIds,          // ← always an array
+      c8y_Driver: raw
     };
   }
 }

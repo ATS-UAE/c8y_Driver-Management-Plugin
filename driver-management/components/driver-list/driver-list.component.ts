@@ -1,7 +1,7 @@
 import { Component, OnInit, Pipe, PipeTransform, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { DriverService } from '../../services/driver.service';
-import { Driver } from '../../models/driver.model';
+import { Driver, DriverGroup } from '../../models/driver.model';
 import { AlertService } from '@c8y/ngx-components';
 
 @Pipe({ name: 'filter', pure: false })
@@ -10,14 +10,6 @@ export class FilterPipe implements PipeTransform {
     if (!items || !field) return items;
     return items.filter(item => item[field] === value);
   }
-}
-
-export interface DriverGroup {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: Date;
-  updatedAt?: Date;
 }
 
 @Component({
@@ -30,12 +22,12 @@ export class DriverListComponent implements OnInit {
   activeTab: 'drivers' | 'groups' = 'drivers';
 
   // ── Driver list table (infinite scroll) ──────────────────────
-  drivers: Driver[] = [];           // accumulated rows across pages
+  drivers: Driver[] = [];
   filteredDrivers: Driver[] = [];
-  loading = false;                  // initial page spinner
-  loadingMoreTable = false;         // bottom-of-table spinner
+  loading = false;
+  loadingMoreTable = false;
   tableHasMore = false;
-  tablePage = 1;                    // next page to fetch
+  tablePage = 1;
   searchTerm = '';
   Object = Object;
 
@@ -50,24 +42,26 @@ export class DriverListComponent implements OnInit {
   showAssignDriverModal = false;
   editingGroup: DriverGroup | null = null;
   selectedGroup: DriverGroup | null = null;
-  selectedDriver: Driver | null = null;
 
-  groupForm  = { name: '', description: '' };
-  assignForm = { groupId: '', driverId: '' };
+  groupForm = { name: '', description: '' };
 
-  // ── Searchable GROUP dropdown (groups are few, no pagination needed) ──
+  // ── Assign modal: target group ────────────────────────────────
+  assignGroupId = '';
+
+  // ── Searchable GROUP dropdown ─────────────────────────────────
   groupDropdownOpen   = false;
   groupSelectSearch   = '';
   filteredGroupOptions: DriverGroup[] = [];
 
-  // ── Paginated DRIVER dropdown (scroll-to-load, same pattern as vehicle) ──
-  showDriverDropdown    = false;
-  driverDropdownSearch  = '';
-  dropdownDrivers: Driver[] = [];   // accumulated rows shown so far
-  driverDropdownPage    = 1;        // next page to fetch
-  driverDropdownHasMore = false;
-  loadingMoreDrivers    = false;
-  private _driverSearchTimer: any   = null;
+  // ── Multi-select DRIVER panel (scroll-to-load + checkboxes) ──
+  showDriverPanel      = false;
+  driverPanelSearch    = '';
+  panelDrivers: Driver[] = [];          // accumulated pages shown
+  driverPanelPage      = 1;
+  driverPanelHasMore   = false;
+  loadingMorePanelDrivers = false;
+  selectedDriverIds    = new Set<string>(); // checked driver IDs
+  private _panelSearchTimer: any = null;
 
   constructor(
     private driverService: DriverService,
@@ -80,43 +74,37 @@ export class DriverListComponent implements OnInit {
     this.loadGroups();
   }
 
-  /** Close all dropdowns on outside click */
   @HostListener('document:click', ['$event'])
   onDocumentClick(e: MouseEvent) {
     const t = e.target as HTMLElement;
-    if (!t.closest('.searchable-select') && !t.closest('.pds-wrap')) {
-      this.groupDropdownOpen  = false;
-      this.showDriverDropdown = false;
-    }
+    if (!t.closest('.searchable-select')) this.groupDropdownOpen = false;
+    // driver panel stays open until Cancel/Assign clicked
   }
 
-  // ==================== DRIVER TABLE METHODS ====================
+  // ==================== DRIVER TABLE ====================
 
-  /** Initial load — resets all rows and fetches page 1 */
   async loadDrivers() {
     try {
       this.loading = true;
       this.drivers = [];
       this.tablePage = 1;
       const page = await this.driverService.getDriversPaginated(1, this.searchTerm);
-      this.drivers       = page.drivers;
+      this.drivers         = page.drivers;
       this.filteredDrivers = [...this.drivers];
-      this.tableHasMore  = page.hasMore;
-      this.tablePage     = 2;
-    } catch (error) {
-      console.error('❌ Error loading drivers:', error);
+      this.tableHasMore    = page.hasMore;
+      this.tablePage       = 2;
+    } catch (e) {
+      console.error('❌ Error loading drivers:', e);
       this.alertService.danger('Failed to load drivers');
     } finally {
       this.loading = false;
     }
   }
 
-  /** Called by (scroll) on .table-scroll-container — appends next page */
   async onTableScroll(event: Event) {
     if (!this.tableHasMore || this.loadingMoreTable || this.loading) return;
     const el = event.target as HTMLElement;
     if (el.scrollTop + el.clientHeight < el.scrollHeight - 60) return;
-
     this.loadingMoreTable = true;
     try {
       const page = await this.driverService.getDriversPaginated(this.tablePage, this.searchTerm);
@@ -125,18 +113,11 @@ export class DriverListComponent implements OnInit {
       this.filteredDrivers = [...this.drivers];
       this.tableHasMore = page.hasMore;
       this.tablePage    = page.currentPage + 1;
-    } catch (error) {
-      console.error('❌ Error loading more drivers:', error);
-    } finally {
-      this.loadingMoreTable = false;
-    }
+    } catch (e) { console.error('❌ Load more drivers:', e); }
+    finally { this.loadingMoreTable = false; }
   }
 
-  /** Search resets to page 1 with the new term */
-  filterDrivers() {
-    // Reset and reload from backend with search term
-    this.loadDrivers();
-  }
+  filterDrivers() { this.loadDrivers(); }
 
   addDriver()             { this.router.navigate(['/drivers/add']); }
   editDriver(d: Driver)   { this.router.navigate(['/drivers/edit', d.id]); }
@@ -145,18 +126,17 @@ export class DriverListComponent implements OnInit {
   }
 
   async deleteDriver(driver: Driver) {
-    if (!confirm(`Are you sure you want to delete driver ${driver.name}?`)) return;
+    if (!confirm(`Delete driver ${driver.name}?`)) return;
     try {
       await this.driverService.deleteDriver(driver.id!);
-      this.alertService.success('Driver deleted successfully');
-      await this.loadDrivers(); // resets to page 1
-    } catch (error) {
-      this.alertService.danger('Failed to delete driver');
-    }
+      this.alertService.success('Driver deleted');
+      await this.loadDrivers();
+    } catch { this.alertService.danger('Failed to delete driver'); }
   }
 
   getActiveDriversCount() { return this.drivers.filter(d => d.status === 'active').length; }
 
+  // ── Custom field helpers ──────────────────────────────────────
   hasCustomFields(driver: Driver): boolean {
     const cf = (driver as any).customFields;
     return cf && typeof cf === 'object' && Object.keys(cf).length > 0;
@@ -165,18 +145,13 @@ export class DriverListComponent implements OnInit {
     const cf = (driver as any).customFields;
     return (!cf || typeof cf !== 'object') ? 0 : Object.keys(cf).length;
   }
-  getCustomFieldsTooltip(driver: Driver): string {
-    const cf = (driver as any).customFields;
-    if (!cf) return '';
-    return Object.entries(cf).map(([k, v]) => `${k}: ${v}`).join('\n');
-  }
   getCustomFieldsArray(driver: Driver): Array<{ key: string; value: string }> {
     const cf = (driver as any).customFields;
     if (!cf || typeof cf !== 'object') return [];
     return Object.entries(cf).map(([key, value]) => ({ key, value: String(value) }));
   }
 
-  // ==================== GROUP METHODS ====================
+  // ==================== GROUPS ====================
 
   async loadGroups() {
     try {
@@ -190,21 +165,20 @@ export class DriverListComponent implements OnInit {
           }))
         : [];
       this.filteredGroups = [...this.groups];
-    } catch (error) {
+    } catch {
       this.alertService.danger('Failed to load groups');
       this.groups = []; this.filteredGroups = [];
-    } finally {
-      this.loadingGroups = false;
-    }
+    } finally { this.loadingGroups = false; }
   }
 
   filterGroups() {
     const term = this.groupSearchTerm.toLowerCase().trim();
-    if (!term) { this.filteredGroups = [...this.groups]; return; }
-    this.filteredGroups = this.groups.filter(g =>
-      g.name?.toLowerCase().includes(term) ||
-      g.description?.toLowerCase().includes(term)
-    );
+    this.filteredGroups = !term
+      ? [...this.groups]
+      : this.groups.filter(g =>
+          g.name?.toLowerCase().includes(term) ||
+          g.description?.toLowerCase().includes(term)
+        );
   }
 
   addGroup() {
@@ -212,6 +186,7 @@ export class DriverListComponent implements OnInit {
     this.groupForm = { name: '', description: '' };
     this.showGroupModal = true;
   }
+
   editGroup(group: DriverGroup) {
     this.editingGroup = group;
     this.groupForm = { name: group.name, description: group.description };
@@ -224,37 +199,35 @@ export class DriverListComponent implements OnInit {
       if (this.editingGroup) {
         const idx = this.groups.findIndex(g => g.id === this.editingGroup!.id);
         if (idx !== -1) this.groups[idx] = { ...this.groups[idx], ...this.groupForm, updatedAt: new Date() };
-        this.alertService.success('Group updated successfully');
+        this.alertService.success('Group updated');
       } else {
         this.groups.push({ id: Date.now().toString(), ...this.groupForm, createdAt: new Date() });
-        this.alertService.success('Group created successfully');
+        this.alertService.success('Group created');
       }
       localStorage.setItem('driverGroups', JSON.stringify(this.groups));
       this.filterGroups();
       this.closeGroupModal();
-    } catch (error) {
-      this.alertService.danger('Failed to save group');
-    }
+    } catch { this.alertService.danger('Failed to save group'); }
   }
 
   async deleteGroup(group: DriverGroup) {
     const count = this.getGroupDriverCount(group.id);
-    let msg = `Are you sure you want to delete "${group.name}"?`;
-    if (count > 0) msg += `\n\nThis will unassign ${count} driver(s).`;
+    let msg = `Delete "${group.name}"?`;
+    if (count > 0) msg += `\n\nThis will remove ${count} driver(s) from this group.`;
     if (!confirm(msg)) return;
     try {
-      for (const driver of this.drivers.filter(d => d.groupId === group.id)) {
-        const updated = await this.driverService.removeDriverFromGroup(driver.id!);
+      // Remove this group from every driver that has it
+      for (const driver of this.drivers.filter(d => d.groupIds?.includes(group.id))) {
+        const updated = await this.driverService.removeDriverFromGroup(driver.id!, group.id);
         const idx = this.drivers.findIndex(d => d.id === driver.id);
         if (idx !== -1) this.drivers[idx] = updated;
       }
       this.groups = this.groups.filter(g => g.id !== group.id);
       localStorage.setItem('driverGroups', JSON.stringify(this.groups));
-      this.filterGroups(); this.filterDrivers();
-      this.alertService.success('Group deleted successfully');
-    } catch (error) {
-      this.alertService.danger('Failed to delete group');
-    }
+      this.filterGroups();
+      this.filteredDrivers = [...this.drivers];
+      this.alertService.success('Group deleted');
+    } catch { this.alertService.danger('Failed to delete group'); }
   }
 
   closeGroupModal() {
@@ -263,75 +236,103 @@ export class DriverListComponent implements OnInit {
     this.groupForm = { name: '', description: '' };
   }
 
-  // ==================== GROUP-DRIVER RELATIONSHIP ====================
+  // ==================== GROUP ↔ DRIVER RELATIONSHIPS ====================
 
-  getGroupName(groupId: string)        { return this.groups.find(g => g.id === groupId)?.name ?? 'Unknown Group'; }
-  getGroupDriverCount(groupId: string) { return this.drivers.filter(d => d.groupId === groupId).length; }
-  getGroupDrivers(groupId: string)     { return this.drivers.filter(d => d.groupId === groupId); }
-  getAvailableDriversForGroup(groupId?: string) {
-    return this.drivers.filter(d => !d.groupId || d.groupId === groupId);
+  /** Group names for a driver (multiple) */
+  getDriverGroupNames(driver: Driver): string[] {
+    if (!driver.groupIds?.length) return [];
+    return driver.groupIds
+      .map(id => this.groups.find(g => g.id === id)?.name)
+      .filter(Boolean) as string[];
   }
 
-  assignGroup(driver: Driver) {
-    this.selectedDriver = driver;
-    this.selectedGroup  = null;
-    this.assignForm = { groupId: driver.groupId || '', driverId: driver.id! };
+  /** Number of drivers that belong to a group */
+  getGroupDriverCount(groupId: string): number {
+    return this.drivers.filter(d => d.groupIds?.includes(groupId)).length;
+  }
+
+  /** Drivers belonging to a group */
+  getGroupDrivers(groupId: string): Driver[] {
+    return this.drivers.filter(d => d.groupIds?.includes(groupId));
+  }
+
+  // ==================== ASSIGN MODAL (open) ====================
+
+  /** Open from driver row → pre-select no group; show group picker */
+  openAssignFromDriver(driver: Driver) {
+    this.selectedGroup = null;
+    this.assignGroupId = '';
     this._openAssignModal();
+    // Pre-tick the driver
+    this.selectedDriverIds.clear();
+    this.selectedDriverIds.add(driver.id!);
   }
+
+  /** Open from group card → group pre-selected; pick drivers */
   addDriverToGroup(group: DriverGroup) {
-    this.selectedGroup  = group;
-    this.selectedDriver = null;
-    this.assignForm = { groupId: group.id, driverId: '' };
+    this.selectedGroup = group;
+    this.assignGroupId = group.id;
     this._openAssignModal();
   }
 
   private _openAssignModal() {
-    // Reset group dropdown
+    // Reset group selector
     this.groupDropdownOpen    = false;
     this.groupSelectSearch    = '';
     this.filteredGroupOptions = [...this.groups];
-    // Reset & load page 1 of driver dropdown
-    this._loadDriverDropdownPage1();
+    // Reset driver multi-select panel
+    this.selectedDriverIds   = new Set<string>();
+    this._loadDriverPanelPage1();
     this.showAssignDriverModal = true;
   }
 
+  closeAssignDriverModal() {
+    this.showAssignDriverModal = false;
+    this.selectedGroup   = null;
+    this.assignGroupId   = '';
+    this.showDriverPanel = false;
+    this.groupDropdownOpen = false;
+    this.driverPanelSearch = '';
+  }
+
+  // ==================== CONFIRM ASSIGN ====================
+
   async confirmAssignDriver() {
-    const groupId  = this.selectedGroup?.id || this.assignForm.groupId;
-    const driverId = this.selectedDriver?.id || this.assignForm.driverId;
-    if (!groupId || !driverId) { this.alertService.warning('Please select both a group and a driver'); return; }
+    const groupId = this.selectedGroup?.id || this.assignGroupId;
+    if (!groupId) { this.alertService.warning('Please select a group'); return; }
+    if (this.selectedDriverIds.size === 0) { this.alertService.warning('Please select at least one driver'); return; }
+
     try {
-      const updated = await this.driverService.assignDriverToGroup(driverId, groupId);
-      const idx = this.drivers.findIndex(d => d.id === driverId);
-      if (idx !== -1) this.drivers[idx] = updated;
-      this.filterDrivers();
-      this.alertService.success(`Driver assigned to "${this.getGroupName(groupId)}"`);
+      const ids = Array.from(this.selectedDriverIds);
+      const updated = await this.driverService.addMultipleDriversToGroup(ids, groupId);
+
+      // Patch in-memory driver list
+      for (const u of updated) {
+        const idx = this.drivers.findIndex(d => d.id === u.id);
+        if (idx !== -1) this.drivers[idx] = u;
+        else this.drivers.push(u);
+      }
+      this.filteredDrivers = [...this.drivers];
+
+      const groupName = this.getGroupName(groupId);
+      this.alertService.success(
+        `${ids.length} driver${ids.length > 1 ? 's' : ''} assigned to "${groupName}"`
+      );
       this.closeAssignDriverModal();
-    } catch (error) {
-      this.alertService.danger('Failed to assign driver to group');
+    } catch {
+      this.alertService.danger('Failed to assign drivers');
     }
   }
 
   async removeDriverFromGroup(driver: Driver, group: DriverGroup) {
     if (!confirm(`Remove ${driver.name} from "${group.name}"?`)) return;
     try {
-      const updated = await this.driverService.removeDriverFromGroup(driver.id!);
+      const updated = await this.driverService.removeDriverFromGroup(driver.id!, group.id);
       const idx = this.drivers.findIndex(d => d.id === driver.id);
       if (idx !== -1) this.drivers[idx] = updated;
-      this.filterDrivers();
+      this.filteredDrivers = [...this.drivers];
       this.alertService.success(`${driver.name} removed from "${group.name}"`);
-    } catch (error) {
-      this.alertService.danger('Failed to remove driver from group');
-    }
-  }
-
-  closeAssignDriverModal() {
-    this.showAssignDriverModal = false;
-    this.selectedGroup = null; this.selectedDriver = null;
-    this.assignForm = { groupId: '', driverId: '' };
-    this.groupDropdownOpen  = false;
-    this.showDriverDropdown = false;
-    this.groupSelectSearch  = '';
-    this.driverDropdownSearch = '';
+    } catch { this.alertService.danger('Failed to remove driver from group'); }
   }
 
   // ==================== SEARCHABLE GROUP DROPDOWN ====================
@@ -339,11 +340,11 @@ export class DriverListComponent implements OnInit {
   toggleGroupDropdown() {
     this.groupDropdownOpen = !this.groupDropdownOpen;
     if (this.groupDropdownOpen) {
-      this.showDriverDropdown   = false;
       this.groupSelectSearch    = '';
       this.filteredGroupOptions = [...this.groups];
     }
   }
+
   filterGroupOptions() {
     const term = this.groupSelectSearch.toLowerCase().trim();
     this.filteredGroupOptions = !term
@@ -353,101 +354,108 @@ export class DriverListComponent implements OnInit {
           g.description?.toLowerCase().includes(term)
         );
   }
+
   selectGroup(group: DriverGroup) {
-    this.assignForm.groupId  = group.id;
-    this.groupDropdownOpen   = false;
-    this.groupSelectSearch   = '';
-    this.assignForm.driverId = '';
-    this._loadDriverDropdownPage1(); // refresh available drivers
+    this.assignGroupId     = group.id;
+    this.selectedGroup     = group;
+    this.groupDropdownOpen = false;
+    this.groupSelectSearch = '';
   }
 
-  // ==================== PAGINATED DRIVER DROPDOWN ====================
+  getGroupName(groupId: string) {
+    return this.groups.find(g => g.id === groupId)?.name ?? 'Unknown Group';
+  }
 
-  /** Resets and fetches page 1 */
-  private async _loadDriverDropdownPage1() {
-    this.dropdownDrivers      = [];
-    this.driverDropdownPage   = 1;
-    this.driverDropdownHasMore = false;
-    this.driverDropdownSearch  = '';
-    this.loadingMoreDrivers   = true;
+  // ==================== MULTI-SELECT DRIVER PANEL ====================
+
+  private async _loadDriverPanelPage1() {
+    this.panelDrivers          = [];
+    this.driverPanelPage       = 1;
+    this.driverPanelHasMore    = false;
+    this.driverPanelSearch     = '';
+    this.loadingMorePanelDrivers = true;
+    this.showDriverPanel         = true;
     try {
       const page = await this.driverService.getDriversPaginated(1, '');
-      this.dropdownDrivers       = page.drivers;
-      this.driverDropdownHasMore = page.hasMore;
-      this.driverDropdownPage    = 2;
-    } catch (e) {
-      console.error('❌ Driver dropdown page 1 failed:', e);
-    } finally {
-      this.loadingMoreDrivers = false;
-    }
+      this.panelDrivers       = page.drivers;
+      this.driverPanelHasMore = page.hasMore;
+      this.driverPanelPage    = 2;
+    } catch (e) { console.error('❌ Driver panel page 1 failed:', e); }
+    finally { this.loadingMorePanelDrivers = false; }
   }
 
-  /** Toggle panel open/close */
-  toggleDriverDropdown() {
-    this.showDriverDropdown = !this.showDriverDropdown;
-    if (this.showDriverDropdown) {
-      this.groupDropdownOpen = false;
-    }
-  }
-
-  /** Search input — debounce 300 ms then reload from page 1 */
-  onDriverSearchChange() {
-    clearTimeout(this._driverSearchTimer);
-    this._driverSearchTimer = setTimeout(async () => {
-      this.dropdownDrivers      = [];
-      this.driverDropdownPage   = 1;
-      this.loadingMoreDrivers   = true;
+  /** Debounced search — resets to page 1 */
+  onDriverPanelSearch() {
+    clearTimeout(this._panelSearchTimer);
+    this._panelSearchTimer = setTimeout(async () => {
+      this.panelDrivers          = [];
+      this.driverPanelPage       = 1;
+      this.loadingMorePanelDrivers = true;
       try {
-        const page = await this.driverService.getDriversPaginated(1, this.driverDropdownSearch);
-        this.dropdownDrivers       = page.drivers;
-        this.driverDropdownHasMore = page.hasMore;
-        this.driverDropdownPage    = 2;
-      } catch (e) {
-        console.error('❌ Driver search failed:', e);
-      } finally {
-        this.loadingMoreDrivers = false;
-      }
+        const page = await this.driverService.getDriversPaginated(1, this.driverPanelSearch);
+        this.panelDrivers       = page.drivers;
+        this.driverPanelHasMore = page.hasMore;
+        this.driverPanelPage    = 2;
+      } catch (e) { console.error('❌ Driver panel search failed:', e); }
+      finally { this.loadingMorePanelDrivers = false; }
     }, 300);
   }
 
-  /** Scroll handler — loads next page when near the bottom */
-  async onDriverDropdownScroll(event: Event) {
-    if (!this.driverDropdownHasMore || this.loadingMoreDrivers) return;
+  /** Scroll handler — loads next page when near bottom */
+  async onDriverPanelScroll(event: Event) {
+    if (!this.driverPanelHasMore || this.loadingMorePanelDrivers) return;
     const el = event.target as HTMLElement;
     if (el.scrollTop + el.clientHeight < el.scrollHeight - 40) return;
-
-    this.loadingMoreDrivers = true;
+    this.loadingMorePanelDrivers = true;
     try {
-      const page = await this.driverService.getDriversPaginated(
-        this.driverDropdownPage,
-        this.driverDropdownSearch
-      );
-      const seen = new Set(this.dropdownDrivers.map(d => d.id));
-      this.dropdownDrivers.push(...page.drivers.filter(d => !seen.has(d.id)));
-      this.driverDropdownHasMore = page.hasMore;
-      this.driverDropdownPage    = page.currentPage + 1;
-    } catch (e) {
-      console.error('❌ Load more drivers failed:', e);
-    } finally {
-      this.loadingMoreDrivers = false;
+      const page = await this.driverService.getDriversPaginated(this.driverPanelPage, this.driverPanelSearch);
+      const seen = new Set(this.panelDrivers.map(d => d.id));
+      this.panelDrivers.push(...page.drivers.filter(d => !seen.has(d.id)));
+      this.driverPanelHasMore = page.hasMore;
+      this.driverPanelPage    = page.currentPage + 1;
+    } catch (e) { console.error('❌ Load more panel drivers:', e); }
+    finally { this.loadingMorePanelDrivers = false; }
+  }
+
+  /** Toggle a single driver checkbox */
+  toggleDriverSelection(driver: Driver) {
+    const id = driver.id!;
+    if (this.selectedDriverIds.has(id)) {
+      this.selectedDriverIds.delete(id);
+    } else {
+      this.selectedDriverIds.add(id);
     }
   }
 
-  /** Select a driver row */
-  selectDriver(driver: Driver) {
-    this.assignForm.driverId = driver.id!;
-    this.showDriverDropdown  = false;
+  /** Select / deselect all currently visible drivers */
+  toggleSelectAll() {
+    const allSelected = this.panelDrivers.every(d => this.selectedDriverIds.has(d.id!));
+    if (allSelected) {
+      this.panelDrivers.forEach(d => this.selectedDriverIds.delete(d.id!));
+    } else {
+      this.panelDrivers.forEach(d => this.selectedDriverIds.add(d.id!));
+    }
   }
 
-  /** Label shown in the closed trigger */
-  getSelectedDriverName(): string {
-    const id = this.assignForm.driverId;
-    if (!id) return '';
-    const d = this.dropdownDrivers.find(dr => dr.id === id)
-           ?? this.drivers.find(dr => dr.id === id);
-    if (!d) return 'Unknown Driver';
-    const contact = d.phoneNumber || d.email || '';
-    return contact ? `${d.name} — ${contact}` : d.name;
+  get allVisibleSelected(): boolean {
+    return this.panelDrivers.length > 0 &&
+           this.panelDrivers.every(d => this.selectedDriverIds.has(d.id!));
+  }
+
+  get someVisibleSelected(): boolean {
+    return this.panelDrivers.some(d => this.selectedDriverIds.has(d.id!)) && !this.allVisibleSelected;
+  }
+
+  /** Selected driver objects for the pill display */
+  get selectedDriverObjects(): Driver[] {
+    return Array.from(this.selectedDriverIds)
+      .map(id => this.panelDrivers.find(d => d.id === id) ?? this.drivers.find(d => d.id === id))
+      .filter(Boolean) as Driver[];
+  }
+
+  /** Remove a driver from selection via pill × button */
+  deselectDriver(driver: Driver) {
+    this.selectedDriverIds.delete(driver.id!);
   }
 
   // ==================== UTILITY ====================
@@ -455,12 +463,12 @@ export class DriverListComponent implements OnInit {
   formatDate(date: Date): string {
     if (!date) return 'N/A';
     const d = new Date(date);
-    const diffDays = Math.ceil(Math.abs(Date.now() - d.getTime()) / 86400000);
-    if (diffDays === 0)  return 'Today';
-    if (diffDays === 1)  return 'Yesterday';
-    if (diffDays < 7)    return `${diffDays} days ago`;
-    if (diffDays < 30)   return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365)  return `${Math.floor(diffDays / 30)} months ago`;
+    const diff = Math.ceil(Math.abs(Date.now() - d.getTime()) / 86400000);
+    if (diff === 0)  return 'Today';
+    if (diff === 1)  return 'Yesterday';
+    if (diff < 7)    return `${diff} days ago`;
+    if (diff < 30)   return `${Math.floor(diff / 7)} weeks ago`;
+    if (diff < 365)  return `${Math.floor(diff / 30)} months ago`;
     return d.toLocaleDateString();
   }
 }

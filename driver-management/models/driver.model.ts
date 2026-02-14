@@ -3,6 +3,13 @@ export interface CustomField {
   key: string;
   value: string;
 }
+export interface DriverGroup {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
 
 export interface Driver {
   creationTime: any;
@@ -16,7 +23,7 @@ export interface Driver {
   status: "active" | "inactive";
   customFields?: CustomField[];
   createdTime?: string;
-  groupId?: string;
+  groupIds?: string[];
 }
 
 export interface Vehicle {
