@@ -346,14 +346,14 @@
               (click)="editGroup(group)"
               title="Edit Group"
             >
-              <span  class="fa fa-pencil">✏️</span>
+              <span class="fa fa-pencil">✏️</span>
             </button>
             <button
               class="icon-btn icon-btn-danger"
               (click)="deleteGroup(group)"
               title="Delete Group"
             >
-              <span  class="fa fa-trash">✖</span>
+              <span class="fa fa-trash">✖</span>
             </button>
           </div>
         </div>
@@ -398,7 +398,7 @@
                 (click)="removeDriverFromGroup(driver, group)"
                 title="Remove from group"
               >
-                <span  class="fa fa-times">✖</span>
+                <span class="fa fa-times">✖</span>
               </button>
             </div>
           </div>
@@ -452,10 +452,36 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeGroupModal()">
+        <button
+          class="btn"
+          style="
+            background: white;
+            border: 2px solid #e0e6ed;
+
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #5a6c7d;
+            transition: all 0.3s;
+          "
+          (click)="closeGroupModal()"
+        >
           Cancel
         </button>
-        <button class="btn btn-primary" (click)="saveGroup()">
+        <button
+          class="btn"
+          style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+            color: white;
+          "
+          (click)="saveGroup()"
+        >
           <i class="fa fa-save"></i>
           {{ editingGroup ? "Update Group" : "Create Group" }}
         </button>
